@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="入口导航主页">
+<title>我的主页</title>
+
+<!--
+  ========================================================================
+   此主页的维护与发布方式（重要）：
+   ----------------------------------------------------------
+   线上访客看到的数据来自同目录的 config.json 文件（仓库数据源）。
+   您(管理员)更新内容的流程：
+   1. 本机打开本文件夹的 index.html（双击即可），进右下角管理后台改内容；
+   2. 点「保存并同步」，会自动下载/生成一份最新的 config.json 到本机；
+   3. 把这份 config.json 放回本文件夹（覆盖旧的 config.json）；
+   4. 双击「同步.bat」→ 自动 git 提交并推送到 Gitee 仓库；
+   5. 若用 Gitee Pages，去仓库「服务-Gitee Pages」点一次"更新"触发审核。
+   ※ 线上页面自动读取 config.json；本文件顶部 entries 只是"出厂默认值"，
+     给首次打开或本地管理时兜底用，平时改它不影响线上。
+   ========================================================================
+   下方【内容配置区】仅供兜底与备份，一般用后台 + config.json 维护即可。
+   格式说明（兜底用，照抄一行改一改）：
+   ----------------------------------------------------------
+   ① 新增一个入口：在 entries 的 [ 和 ] 之间复制任意一行 { ... } 填好。
+   每行格式：
+        type     入口类型：填 'link'     → 点击跳转网页(新窗口打开)
+                          填 'download' → 点击下载文件
+        icon     卡片小图标：填一个 emoji，如 🌐 📄 🎮 🎁 ✨；可留 ''
+        title    卡片标题：显示的入口名称
+        desc     卡片副标题：一句话描述；可留 ''
+        url      链接地址：跳转网页填网址；下载文件填与网页同目录的文件名
+        color    卡片配色（可不填）：candy / sunset / ocean / grape /
+                 mint / gold 六选一；不填自动轮换
+        cat      分类（可不填）：填 categories 里的名字，多个用英文逗号分隔
+   ② 每两个入口之间用英文逗号 , 分隔；最后一个后面不要逗号。
+  ========================================================================
+-->
+<style>
+  :root{
+    --bg1:#fff0f6; --bg2:#f0f0ff; --bg3:#e6f7ff;
+    --ink:#2b2140; --ink2:#6f6487;
+    --card:rgba(255,255,255,.86);
+    --line:rgba(120,90,200,.10);
+    --shadow:0 8px 24px rgba(120,90,200,.10);
+    --shadow-hover:0 16px 34px rgba(120,90,200,.18);
+    --r-lg:22px; --r-md:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100vh; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
+                "Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:linear-gradient(150deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* —— 漂浮彩球背景 —— */
+  .blob{position:fixed; z-index:0; border-radius:50%; filter:blur(60px); opacity:.55; pointer-events:none;}
+  .blob.b1{width:340px;height:340px; left:-80px;  top:-80px;  background:#ffd3e8; animation:float 14s ease-in-out infinite;}
+  .blob.b2{width:300px;height:300px; right:-70px; top:12%;    background:#d9c7ff; animation:float 17s ease-in-out infinite reverse;}
+  .blob.b3{width:360px;height:360px; left:22%;    bottom:-130px; background:#c9ecff; animation:float 20s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(26px,-30px) scale(1.08)}}
+
+  .wrap{position:relative; z-index:1; width:min(1040px, calc(100% - 32px)); margin:0 auto; padding:64px 0 48px;}
+  @media (max-width:640px){ .wrap{padding:44px 0 32px;} }
+
+  /* —— 顶部标题区 —— */
+  header{text-align:center; margin-bottom:34px;}
+  .site-name{
+    margin:0; font-size:clamp(30px, 5vw, 44px); font-weight:900; letter-spacing:.5px;
+    background:linear-gradient(90deg,#ff5e8a,#8a5cff 60%,#2f9bff);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    animation:rise .55s .08s ease both;
+  }
+  .slogan{margin:12px 0 0; color:var(--ink2); font-size:clamp(15px,2.4vw,17px); animation:rise .55s .16s ease both;}
+
+  /* —— 卡片墙 —— */
+  .grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(258px,1fr));}
+  @media (max-width:600px){ .grid{gap:12px;} }
+
+  .card{
+    position:relative; display:flex; align-items:center; gap:14px; padding:16px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r-md);
+    box-shadow:var(--shadow); text-decoration:none; color:inherit;
+    backdrop-filter:blur(8px); overflow:hidden;
+    animation:rise .5s both; animation-delay:calc(var(--i,0)*45ms);
+    transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  }
+  .card::before{ /* 顶部渐变色条 */
+    content:""; position:absolute; left:0; top:0; right:0; height:4px;
+    background:linear-gradient(90deg,var(--a,#ff6a88),var(--b,#b06ff0));
+    opacity:.85;
+  }
+  .card:hover,.card:focus-visible{
+    transform:translateY(-4px); box-shadow:var(--shadow-hover);
+    border-color:rgba(140,110,255,.35); outline:none;
+  }
+  .card:active{transform:translateY(-1px) scale(.995);}
+
+  .icon{
+    flex:0 0 auto; width:52px; height:52px; border-radius:15px; display:grid;
+    place-items:center; font-size:26px; color:#fff; background:linear-gradient(135deg,var(--a),var(--b));
+    box-shadow:0 6px 14px rgba(0,0,0,.10); user-select:none;
+  }
+  .info{min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; padding-right:6px;}
+  .name{font-size:16px; font-weight:700; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .desc{font-size:13px; color:var(--ink2); line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .tag{
+    flex:0 0 auto; font-size:11px; font-weight:600; padding:4px 9px; border-radius:999px;
+  }
+  .tag.go{color:#2f6fed; background:rgba(47,111,237,.12);}
+  .tag.dl{color:#e06a22; background:rgba(224,106,34,.13);}
+
+  /* —— 卡片六套配色 —— */
+  .th-candy  {--a:#fda085; --b:#f5576c;}
+  .th-sunset {--a:#ff9a8b; --b:#ff6a88;}
+  .th-ocean  {--a:#36d1dc; --b:#5b86e5;}
+  .th-grape  {--a:#a18cd1; --b:#fbc2eb;}
+  .th-mint   {--a:#43e97b; --b:#38c8a8;}
+  .th-gold   {--a:#f6d365; --b:#fda085;}
+
+  @keyframes rise{from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:translateY(0);}}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important; transition:none!important;}
+  }
+
+  /* —— 底部 —— */
+  footer{margin-top:40px; text-align:center; color:var(--ink2); font-size:12.5px; animation:rise .5s .3s ease both;}
+  @media (max-width:600px){ footer{margin-top:28px;} }
+
+  /* —— 首页：搜索 + 分类标签 —— */
+  .home-tools{margin:-6px 0 22px;}
+  .search-box{position:relative; max-width:520px; margin:0 auto 14px;}
+  .search-box .search-ico{position:absolute; left:16px; top:50%; transform:translateY(-50%); font-size:15px; opacity:.6; pointer-events:none;}
+  .search-box input{width:100%; padding:12px 16px 12px 42px; border:1px solid var(--line);
+    border-radius:999px; font-size:14.5px; outline:none; box-sizing:border-box;
+    background:var(--card); backdrop-filter:blur(8px); box-shadow:var(--shadow); color:var(--ink);}
+  .search-box input:focus{border-color:rgba(150,110,255,.5);}
+  .cats{display:flex; gap:10px; overflow-x:auto; padding:2px 2px 10px;
+    scrollbar-width:none; -webkit-overflow-scrolling:touch;}
+  .cats::-webkit-scrollbar{display:none;}
+  .cat-btn{flex:0 0 auto; border:1px solid var(--line); cursor:pointer; padding:8px 16px;
+    border-radius:12px; font-size:14px; font-weight:600; color:var(--ink2);
+    background:var(--card); backdrop-filter:blur(8px); box-shadow:0 4px 12px rgba(120,90,200,.08);
+    transition:transform .15s ease, box-shadow .15s ease;}
+  .cat-btn:hover{transform:translateY(-2px);}
+  .cat-btn.active{color:#fff; border-color:transparent;
+    background:linear-gradient(135deg,#ff8a3d,#ff6a6a);
+    box-shadow:0 8px 18px rgba(255,120,80,.35);}
+  .cat-btn .cnt{font-size:11px; font-weight:500; opacity:.75; margin-left:3px;}
+
+  /* —— 卡片：收藏星标 + 分类小字 —— */
+  .side{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:7px;}
+  .star{width:30px; height:30px; border:none; border-radius:50%; cursor:pointer; font-size:16px;
+    line-height:1; background:rgba(120,90,200,.07); color:#b9b0d0;
+    display:grid; place-items:center; transition:transform .15s ease, background .15s ease;}
+  .star:hover{transform:scale(1.12); background:rgba(255,180,60,.18);}
+  .star.on{color:#ffb02e; background:rgba(255,180,60,.16);}
+  .cat-labels{font-size:11px; color:#a49bbd; margin-top:3px; line-height:1.4;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .empty-tip{grid-column:1/-1; text-align:center; color:var(--ink2); font-size:14px; padding:30px 0;}
+</style>
+<style>
+  /* ================= 管理后台(齿轮按钮/口令/抽屉) ================= */
+  .gear{position:fixed; right:20px; bottom:20px; z-index:60; width:50px; height:50px;
+        border:none; border-radius:50%; cursor:pointer; color:#fff; font-size:22px;
+        display:grid; place-items:center; background:linear-gradient(135deg,#ff6a88,#8a5cff);
+        box-shadow:0 10px 22px rgba(150,90,255,.35); transition:transform .25s ease;}
+  .gear:hover{transform:rotate(60deg) scale(1.06);}
+  .gear.off{display:none;}
+
+  .pw-mask{position:fixed; inset:0; z-index:75; display:none; align-items:center;
+           justify-content:center; background:rgba(25,15,50,.45);}
+  .pw-card{width:min(330px,88vw); background:#fff; border-radius:18px; padding:22px;
+           box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center;}
+  .pw-card h3{margin:0 0 6px; font-size:17px;}
+  .pw-card p{margin:0 0 14px; color:#8a819f; font-size:12.5px;}
+  .pw-card input{width:100%; padding:10px 12px; border:1px solid #e2dcf0;
+                 border-radius:10px; font-size:15px; outline:none; box-sizing:border-box;}
+  .pw-err{color:#e5484d; font-size:12.5px; min-height:18px; margin-top:6px;}
+  .pw-btns{display:flex; gap:10px; margin-top:8px;}
+  .pw-btns button{flex:1; padding:9px 0; border:none; border-radius:10px; cursor:pointer;
+                  font-size:14px; font-weight:600;}
+  .pw-go{background:linear-gradient(135deg,#ff6a88,#8a5cff); color:#fff;}
+  .pw-cancel{background:#f1eef8; color:#5b5470;}
+
+  .adm-wrap{position:fixed; inset:0; z-index:65; display:none; pointer-events:none;}
+  .adm-wrap.on{display:block;}
+  .adm{pointer-events:auto; position:absolute; top:0; right:0; height:100%;
+       width:min(720px,96vw); background:#fff; overflow:hidden; padding:18px 18px 0;
+       box-shadow:-10px 0 40px rgba(60,30,110,.16); box-sizing:border-box;
+       display:flex; flex-direction:column; animation:slideIn .22s ease;}
+  .adm-head,.adm-tip,.adm-sec,.adm-row,.adm-btns{flex:0 0 auto;}
+  #fEntries{flex:1 1 auto; min-height:140px; overflow-y:auto; overflow-x:hidden;
+            padding:2px 8px 10px 0; margin-top:2px;}
+  #fEntries::-webkit-scrollbar{width:8px;}
+  #fEntries::-webkit-scrollbar-thumb{background:#e3daf5; border-radius:8px;}
+  #fEntries::-webkit-scrollbar-thumb:hover{background:#cbbcf0;}
+  #fEntries::-webkit-scrollbar-track{background:transparent;}
+  @keyframes slideIn{from{transform:translateX(36px); opacity:0;} to{transform:none; opacity:1;}}
+  .adm-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .adm-head b{font-size:18px;}
+  .adm-x{border:none; background:#f1eef8; color:#6a6286; width:32px; height:32px;
+         border-radius:10px; cursor:pointer; font-size:14px;}
+  .adm-tip{color:#8a819f; font-size:12.5px; line-height:1.6; margin:0 0 14px;
+           background:#faf8ff; border:1px dashed #e3daf5; padding:8px 12px; border-radius:10px;}
+  .adm-sec{display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700;
+           color:#6a4fd8; margin:18px 0 8px;}
+  .adm-sec::after{content:""; flex:1; height:1px; background:#efeafc;}
+  .adm-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .adm-row label{flex:0 0 66px; font-size:13px; color:#555; font-weight:600;}
+  .adm-row input{flex:1; min-width:0; padding:8px 10px; border:1px solid #e2dcf0;
+                 border-radius:9px; font-size:14px; outline:none; box-sizing:border-box;}
+  .adm-row input:focus{border-color:#a78bfa;}
+
+  .ent{background:#faf9fd; border:1px solid #efe9fb; border-radius:12px; padding:10px; margin-bottom:10px;}
+  .ent-l1{display:flex; align-items:center; gap:8px;}
+  .ent-no{flex:0 0 auto; width:20px; height:20px; border-radius:50%; background:#efe8ff;
+          color:#7c5cff; font-size:11px; font-weight:700; display:grid; place-items:center;}
+  .ent input,.ent select{border:1px solid #e6def4; border-radius:8px; padding:7px 8px;
+                         font-size:13.5px; outline:none; background:#fff; color:#333;}
+  .ent input:focus,.ent select:focus{border-color:#a78bfa;}
+  .e-icon{flex:0 0 56px; height:34px; text-align:center; box-sizing:border-box;
+          cursor:pointer; font-size:19px; line-height:1; padding:0;
+          background:#fff; border:1px solid #e6def4; border-radius:8px;}
+  .e-title{flex:1 1 90px; min-width:60px;}
+  .e-type{flex:0 0 76px;}
+  .e-color{flex:0 0 112px;}
+  .ent-ops{display:flex; gap:4px;}
+  .ent-ops button{width:28px; height:28px; border:none; border-radius:8px; background:#f1ecfc;
+                  color:#6b5bb5; cursor:pointer; font-size:13px; flex:0 0 auto;}
+  .ent-ops button.del{background:#ffeceb; color:#e5484d;}
+  .ent-ops button:hover{filter:brightness(.96);}
+  .ent-l2{display:flex; gap:8px; margin-top:8px;}
+  .e-url{flex:1.4; min-width:0;}
+  .e-desc{flex:1; min-width:0;}
+  .e-cat{flex:1 1 100%; min-width:0;}
+
+  .icon-pop{position:fixed; z-index:90; width:272px; background:#fff; border-radius:14px;
+            box-shadow:0 18px 50px rgba(60,30,110,.28); padding:10px; display:none;}
+  .icon-pop.show{display:block;}
+  .icon-pop::before{content:""; position:absolute; left:22px; top:-7px; width:14px; height:14px;
+            background:#fff; transform:rotate(45deg);}
+  .ip-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:4px; max-height:190px; overflow-y:auto;}
+  .ip-grid button{border:none; background:#faf9fd; border-radius:9px; height:38px; font-size:19px;
+            cursor:pointer; line-height:1;}
+  .ip-grid button:hover{background:#f1eaff;}
+  .ip-cus{display:flex; gap:6px; margin-bottom:8px;}
+  .ip-cus input{flex:1; min-width:0; border:1px solid #e6def4; border-radius:8px; padding:6px 8px;
+            font-size:13px; outline:none;}
+  .ip-clear{width:100%; margin-top:8px; border:1px dashed #e6def4; background:#fff; border-radius:8px;
+            padding:6px 0; font-size:12.5px; color:#8a819f; cursor:pointer;}
+
+  .adm-row button{flex:0 0 auto; border:none; background:#f1eef8; color:#6a6286;
+            border-radius:9px; padding:0 11px; font-size:12.5px; cursor:pointer; height:34px;}
+
+  .adm-search{position:relative; margin:4px 0 10px; flex:0 0 auto;}
+  .adm-search input{width:100%; padding:9px 12px; border:1px solid #e6def4; border-radius:10px;
+            font-size:13.5px; outline:none; box-sizing:border-box; background:#faf9fd;}
+  .adm-search input:focus{border-color:#a78bfa; background:#fff;}
+  .adm-search #fCount{position:absolute; right:12px; top:50%; transform:translateY(-50%);
+            font-size:12px; color:#b3a8cf; pointer-events:none;}
+
+  .adm-btns{display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 18px;
+            background:#fff; border-top:1px solid #f1ecfb;}
+  .adm-btns button{border:none; border-radius:10px; padding:10px 15px; font-size:13.5px;
+                   cursor:pointer; font-weight:600;}
+  #bAdd{background:#fff0f3; color:#e5484d;}
+  #bSave{background:linear-gradient(135deg,#43e97b,#38c8a8); color:#fff;}
+  #bReset{background:#f1eef8; color:#5b5470;}
+  #bExport,#bImport{background:#e8f2ff; color:#2563eb;}
+
+  .toast{position:fixed; left:50%; bottom:34px; transform:translateX(-50%); z-index:85;
+         background:#2b2140; color:#fff; padding:9px 16px; border-radius:999px;
+         font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s;}
+  .toast.show{opacity:1;}
+
+  @media (max-width:600px){
+    .gear{right:12px; bottom:12px; width:46px; height:46px;}
+    .adm{width:100vw; box-shadow:none;}
+    .ent-l1{flex-wrap:wrap;}
+    .e-color{flex:1 1 100%;}
+  }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <!-- ======================= 内容配置区：改这里即可 ======================= -->
+  <script>
+    const SITE_CONFIG = {
+      siteName : "lucks",            // 顶部大标题
+      slogan   : "收集我常用的网站和文件，点卡片直达", // 顶部副标题
+      adminPass: "admin888",         // 管理后台口令(进后台用，也可在后台里改)
+      footer   : "",                   // 底部小字，不需要就留 ''
+      categories: ["实用","学习","工具","艺术","生活","娱乐","视频","音乐","图片","游戏"], // 首页分类标签(可自己增删)
+      entries  : [
+        // ▼ 从这里复制一行，往下加，入口都在卡片上显示 ▼
+        // cat 是分类：填上面 categories 里的名字，多个用英文逗号分隔，如 "实用,音乐"；不需要可留 ''
+        { type:"link",     icon:"🌐", title:"示例网站", desc:"跳转网页示例：点开新窗口", url:"https://www.example.com",        color:"",     cat:"工具,实用" },
+        { type:"download", icon:"📄", title:"示例文件", desc:"下载文件示例：文件与网页放同一目录", url:"示例文件.pdf",              color:"mint", cat:"学习"     },
+        { type:"link",     icon:"🎨", title:"配色自定义", desc:"color 可从 candy/sunset/ocean/grape/mint/gold 中选", url:"https://www.example.com", color:"candy", cat:"艺术,图片" },
+        // ▲ 复制上面任意一行，改内容即可新增入口 ▲
+      ],
+    };
+  </script>
+  <!-- ==================== 内容配置区结束（下面不用动） ==================== -->
+
+  <main class="wrap">
+    <header>
+      <h1 class="site-name" id="siteName">lucks</h1>
+      <p class="slogan" id="slogan"></p>
+    </header>
+    <div class="home-tools">
+      <div class="search-box">
+        <span class="search-ico">🔍</span>
+        <input id="homeSearch" type="search" placeholder="搜索关键词：标题 / 描述 / 链接" autocomplete="off">
+      </div>
+      <nav class="cats" id="cats" aria-label="分类"></nav>
+    </div>
+    <div class="grid" id="cards"></div>
+    <footer id="footer"></footer>
+  </main>
+
+  <script>
+    (function () {
+      /* ================== 数据：默认配置 + 本机缓存(缓存优先) ================== */
+      var LS_KEY = "lucks_home_cfg_v1";
+
+      /* 管理模式判断：
+         file:// 双击打开 或 地址加 ?edit=1 → 编辑模式(显示齿轮后台，改本地数据)
+         其它(线上 / http 直开)         → 展示模式：优先读取同目录 config.json */
+      var EDIT_MODE = (location.protocol === "file:") || /[?&]edit=1(\b|&|$)/.test(location.search);
+
+      function norm(e) {
+        e = e || {};
+        return {
+          type:  (e.type === "download") ? "download" : "link",
+          icon:  (typeof e.icon  === "string") ? e.icon  : "",
+          title: (typeof e.title === "string") ? e.title : "",
+          desc:  (typeof e.desc  === "string") ? e.desc  : "",
+          url:   (typeof e.url   === "string") ? e.url   : "",
+          color: (typeof e.color === "string") ? e.color : "",
+          cat:   (typeof e.cat   === "string") ? e.cat   : ""
+        };
+      }
+      function readSaved() {
+        try {
+          var raw = localStorage.getItem(LS_KEY);
+          if (raw) { var o = JSON.parse(raw); if (o && typeof o === "object") return o; }
+        } catch (err) {}
+        return null;
+      }
+      var saved = EDIT_MODE ? readSaved() : null;
+
+      function defaults() {
+        var d = (typeof SITE_CONFIG !== "undefined") ? SITE_CONFIG : {};
+        return {
+          siteName:  (typeof d.siteName  === "string") ? d.siteName  : "",
+          slogan:    (typeof d.slogan    === "string") ? d.slogan    : "",
+          footer:    (typeof d.footer    === "string") ? d.footer    : "",
+          adminPass: (typeof d.adminPass === "string") ? d.adminPass : "admin888",
+          categories: Array.isArray(d.categories) ? d.categories.filter(function (c) { return typeof c === "string" && c.trim(); }) : [],
+          entries:   Array.isArray(d.entries) ? d.entries.map(norm) : []
+        };
+      }
+      function merged() {
+        var o = defaults();
+        if (saved) {
+          if (typeof saved.siteName  === "string") o.siteName  = saved.siteName;
+          if (typeof saved.slogan    === "string") o.slogan    = saved.slogan;
+          if (typeof saved.footer    === "string") o.footer    = saved.footer;
+          if (typeof saved.adminPass === "string" && saved.adminPass !== "") o.adminPass = saved.adminPass;
+          if (Array.isArray(saved.categories)) o.categories = saved.categories.filter(function (c) { return typeof c === "string" && c.trim(); });
+          if (Array.isArray(saved.entries)) o.entries = saved.entries.map(norm);
+        }
+        return o;
+      }
+      var cur = merged();
+      var remoteData = null;   // 线上模式读取到的 config.json 数据
+
+      /* 生成可下载/保存的 config.json 数据对象 */
+      function buildConfigData() {
+        return {
+          app: "lucks-home-config", savedAt: new Date().toISOString(),
+          siteName: cur.siteName, slogan: cur.slogan, footer: cur.footer,
+          adminPass: cur.adminPass, categories: cur.categories,
+          entries: cur.entries.map(norm)
+        };
+      }
+      /* 远程(线上)数据源：读取同目录 config.json */
+      function loadRemote() {
+        if (EDIT_MODE) return;                       // 本地管理模式不读远程
+        var gearEl = document.getElementById("gear");
+        if (gearEl) gearEl.classList.add("off");      // 展示模式下先隐藏齿轮
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "config.json?_=" + Date.now(), true);
+        xhr.timeout = 6000;
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState !== 4) return;
+          if (xhr.status === 200) {
+            try {
+              var o = JSON.parse(xhr.responseText);
+              if (o && typeof o === "object") {
+                remoteData = o;
+                cur = {
+                  siteName:   (typeof o.siteName  === "string") ? o.siteName  : cur.siteName,
+                  slogan:     (typeof o.slogan    === "string") ? o.slogan    : cur.slogan,
+                  footer:     (typeof o.footer    === "string") ? o.footer    : cur.footer,
+                  adminPass:  (typeof o.adminPass === "string" && o.adminPass !== "") ? o.adminPass : cur.adminPass,
+                  categories: Array.isArray(o.categories) ? o.categories.filter(function (c) { return typeof c === "string" && c.trim(); }) : cur.categories,
+                  entries:    Array.isArray(o.entries) ? o.entries.map(norm) : cur.entries
+                };
+                render();
+                return;
+              }
+            } catch (e) {}
+          }
+          // 读取失败 → 退化为可管理(齿轮显示)，便于兜底
+          if (gearEl) gearEl.classList.remove("off");
+        };
+        xhr.send(null);
+      }
+
+      /* ================== 访客收藏(本机浏览器，按链接记忆) ================== */
+      var FAV_KEY = "lucks_home_fav_v1";
+      function loadFav() {
+        try { var a = JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); return Array.isArray(a) ? a : []; }
+        catch (e) { return []; }
+      }
+      var favs = loadFav();
+      function isFav(url) { return favs.indexOf(url) > -1; }
+      function toggleFav(url) {
+        var i = favs.indexOf(url);
+        if (i > -1) favs.splice(i, 1); else favs.push(url);
+        try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) {}
+      }
+      // 解析入口所属分类(支持逗号/中文逗号/&分隔)
+      function catsOf(it) {
+        return (it.cat || "").split(/[,，&、\/\s]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+
+      /* ================== 页面渲染(首页 + 实时预览) ================== */
+      var $id = function (x) { return document.getElementById(x); };
+      var themes = ["candy", "sunset", "ocean", "grape", "mint", "gold"];
+      var activeCat = "all";   // all / fav / 分类名
+      var homeKw = "";         // 首页搜索词
+      var sortMode = 0;        // 0=默认顺序 1=按名称
+
+      function catCount(name) {
+        return cur.entries.filter(function (it) {
+          return name === "fav" ? isFav(it.url) : catsOf(it).indexOf(name) > -1;
+        }).length;
+      }
+      function renderCats() {
+        var nav = $id("cats");
+        if (!nav) return;
+        nav.innerHTML = "";
+        var defs = [["all", "全部"], ["sort", "⇅"]];
+        var list = defs.concat(cur.categories.map(function (c) { return [c, c]; }), [["fav", "★"]]);
+        list.forEach(function (pair) {
+          var key = pair[0], label = pair[1];
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "cat-btn" + (key === "sort" ? "" : (activeCat === key ? " active" : ""));
+          b.dataset.cat = key;
+          b.innerHTML = label;
+          if (key === "all") b.innerHTML += '<span class="cnt">' + cur.entries.length + "</span>";
+          else if (key === "fav") b.innerHTML += '<span class="cnt">' + catCount("fav") + "</span>";
+          else if (key !== "sort") b.innerHTML += '<span class="cnt">' + catCount(key) + "</span>";
+          if (key === "sort") {
+            b.title = sortMode ? "当前：按名称排序，点击切回默认顺序" : "当前：默认顺序，点击按名称排序";
+            b.style.opacity = sortMode ? "1" : "";
+            if (sortMode) b.classList.add("active");
+          }
+          nav.appendChild(b);
+        });
+      }
+
+      function render() {
+        var name = (cur.siteName || "").trim();
+        document.title = name ? name + " · 主页" : "主页";
+        $id("siteName").textContent = name || "我的主页";
+        $id("slogan").textContent = cur.slogan || "";
+        $id("footer").textContent = cur.footer || "";
+
+        renderCats();
+        var box = $id("cards");
+        box.innerHTML = "";
+
+        // 过滤：分类 / 收藏 / 关键词
+        var kw = homeKw.trim().toLowerCase();
+        var shown = cur.entries.filter(function (it) {
+          if (activeCat === "fav" && !isFav(it.url)) return false;
+          if (activeCat !== "all" && activeCat !== "fav" && catsOf(it).indexOf(activeCat) === -1) return false;
+          if (kw) {
+            var hay = ((it.title || "") + " " + (it.desc || "") + " " + (it.url || "") + " " + (it.cat || "")).toLowerCase();
+            if (hay.indexOf(kw) === -1) return false;
+          }
+          return true;
+        });
+        if (sortMode === 1) {
+          shown = shown.slice().sort(function (a, b) {
+            return (a.title || "").localeCompare(b.title || "", "zh-Hans-CN");
+          });
+        }
+
+        if (!shown.length) {
+          var p = document.createElement("p");
+          p.className = "empty-tip";
+          p.textContent = cur.entries.length
+            ? "没有匹配的入口，换个分类或关键词试试"
+            : "还没有入口：点右下角齿轮进管理后台添加，或在 index.html 顶部配置区填写";
+          box.appendChild(p);
+          return;
+        }
+
+        var frag = document.createDocumentFragment();
+        shown.forEach(function (it) {
+          var i = cur.entries.indexOf(it);
+          var a = document.createElement("a");
+          a.className = "card th-" + (themes.indexOf(it.color) > -1 ? it.color : themes[i % themes.length]);
+          a.href = it.url || "#";
+          if (it.type === "download") a.setAttribute("download", "");
+          else { a.target = "_blank"; a.rel = "noopener"; }
+
+          var icon = document.createElement("span");
+          icon.className = "icon";
+          icon.textContent = (it.icon && it.icon.trim()) ? it.icon : (it.type === "download" ? "\u2193" : "\u2197");
+
+          var info = document.createElement("span");
+          info.className = "info";
+          var b = document.createElement("b");
+          b.className = "name";
+          b.textContent = it.title || "";
+          info.appendChild(b);
+          if (it.desc && it.desc.trim()) {
+            var d = document.createElement("span");
+            d.className = "desc";
+            d.textContent = it.desc;
+            info.appendChild(d);
+          }
+          var cs = catsOf(it);
+          if (cs.length) {
+            var m = document.createElement("span");
+            m.className = "cat-labels";
+            m.textContent = cs.join(" · ");
+            info.appendChild(m);
+          }
+
+          var side = document.createElement("span");
+          side.className = "side";
+          var star = document.createElement("button");
+          star.type = "button";
+          star.className = "star" + (isFav(it.url) ? " on" : "");
+          star.title = isFav(it.url) ? "取消收藏" : "收藏";
+          star.textContent = isFav(it.url) ? "★" : "☆";
+          star.addEventListener("click", function (ev) {
+            ev.preventDefault(); ev.stopPropagation();
+            toggleFav(it.url);
+            render();
+          });
+          var tag = document.createElement("span");
+          tag.className = "tag " + (it.type === "download" ? "dl" : "go");
+          tag.textContent = it.type === "download" ? "下载" : "访问";
+          side.appendChild(star); side.appendChild(tag);
+
+          a.appendChild(icon); a.appendChild(info); a.appendChild(side);
+          frag.appendChild(a);
+        });
+        box.appendChild(frag);
+      }
+      render();
+
+      // 首页：搜索 + 分类标签交互
+      $id("homeSearch").addEventListener("input", function () { homeKw = this.value; render(); });
+      $id("cats").addEventListener("click", function (ev) {
+        var btn = ev.target.closest ? ev.target.closest(".cat-btn") : null;
+        if (!btn) return;
+        if (btn.dataset.cat === "sort") { sortMode = sortMode ? 0 : 1; render(); return; }
+        activeCat = btn.dataset.cat;
+        render();
+        var curBtn = this.querySelector(".cat-btn.active");
+        if (curBtn && curBtn.scrollIntoView) curBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      });
+
+      /* ================== 管理后台界面 ================== */
+      document.body.insertAdjacentHTML("beforeend",
+        '<div class="adm-wrap" id="admWrap">' +
+          '<div class="adm">' +
+            '<div class="adm-head"><b>管理后台</b><button type="button" class="adm-x" id="admX">✕</button></div>' +
+            '<p class="adm-tip">改动会即时预览。完成后请点「保存并同步」：它会写本机缓存并生成一份 <b>config.json</b> 供下载。请把这份 config.json 放回本文件夹替换旧文件，再双击「同步.bat」推送到 Gitee，线上即更新（若用 Gitee Pages 还需在其后台点一次“更新”）。</p>' +
+            '<div class="adm-sec">站点设置</div>' +
+            '<div class="adm-row"><label>大标题</label><input id="fSite"></div>' +
+            '<div class="adm-row"><label>副标题</label><input id="fSlog"></div>' +
+            '<div class="adm-row"><label>底部文字</label><input id="fFoot"></div>' +
+            '<div class="adm-row"><label>管理口令</label><input id="fPass" type="password" autocomplete="new-password"><button type="button" id="pwToggle" title="显示/隐藏口令">显示</button></div>' +
+            '<div class="adm-row"><label>分类标签</label><input id="fCats" placeholder="逗号分隔，如：实用,学习,工具（首页顶部分类）"></div>' +
+            '<div class="adm-sec">入口列表</div>' +
+            '<div class="adm-search"><input id="fSearch" type="search" placeholder="搜索：标题 / 描述 / 链接 / 图标（可留空显示全部）"><span id="fCount"></span></div>' +
+            '<div id="fEntries"></div>' +
+            '<datalist id="catOpts"></datalist>' +
+            '<div class="adm-btns">' +
+              '<button type="button" id="bAdd">＋ 新增入口</button>' +
+              '<button type="button" id="bSave">保存到本机</button>' +
+              '<button type="button" id="bReset">恢复默认</button>' +
+              '<button type="button" id="bExport">导出配置</button>' +
+              '<button type="button" id="bImport">导入配置</button>' +
+              '<input type="file" id="fFile" accept=".json,application/json" style="display:none">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="gear" id="gear" title="管理入口">⚙</button>' +
+        '<div class="pw-mask" id="pwMask">' +
+          '<div class="pw-card">' +
+            '<h3>输入管理口令</h3>' +
+            '<p>默认口令 admin888，进入后可自行修改</p>' +
+            '<input type="password" id="pwIn" placeholder="请输入口令">' +
+            '<div class="pw-err" id="pwErr"></div>' +
+            '<div class="pw-btns">' +
+              '<button type="button" class="pw-cancel" id="pwNo">取消</button>' +
+              '<button type="button" class="pw-go" id="pwOk">进入</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="icon-pop" id="iconPop">' +
+          '<div class="ip-cus"><input id="ipCus" placeholder="也可直接输入任意图标(回车生效)" maxlength="12"></div>' +
+          '<div class="ip-grid" id="ipGrid"></div>' +
+          '<button type="button" class="ip-clear" id="ipClear">清空图标</button>' +
+        '</div>' +
+        '<div class="toast" id="toast"></div>'
+      );
+
+      var admWrap = $id("admWrap"), gear = $id("gear"), pwMask = $id("pwMask"),
+          toastEl = $id("toast"), fEntries = $id("fEntries"), toastTimer = null;
+      fSearchEl = $id("fSearch"); fCountEl = $id("fCount");
+      var iconPop = $id("iconPop"), ipGrid = $id("ipGrid"), ipCus = $id("ipCus"),
+          ipClear = $id("ipClear"), iconTarget = null;
+      var ICONS = ["🌐","📄","📦","🎁","🎮","🎬","🎵","🎨","📷","✈️","🚀","⚡","🔥","⭐","✨","❤️","💡","📖","🎓","🏆","🔧","🧭","🗂️","📞","✉️","💰","🛒","🧾","💾","🔗"];
+      var IP_CELLS_HTML = ICONS.map(function (c) { return '<button type="button">' + c + '</button>'; }).join("");
+      ipGrid.innerHTML = IP_CELLS_HTML;
+      var colorNames = [["", "自动"], ["candy", "糖果橙"], ["sunset", "落日粉"],
+                        ["ocean", "海洋蓝"], ["grape", "香芋紫"], ["mint", "薄荷绿"], ["gold", "阳光金"]];
+      var COLOR_HTML = colorNames.map(function (c) {
+        return '<option value="' + c[0] + '">' + c[1] + '</option>';
+      }).join("");
+
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 1900);
+      }
+
+      /* ---- 图标选择面板 ---- */
+      function setIcon(val) {
+        if (iconTarget === null) return;
+        cur.entries[iconTarget].icon = val;
+        closePop();
+        buildList(); render();
+      }
+      function openPick(btn, idx) {
+        iconTarget = idx;
+        ipCus.value = "";
+        iconPop.classList.add("show");
+        var r = btn.getBoundingClientRect();
+        iconPop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - iconPop.offsetWidth - 8)) + "px";
+        var top = r.bottom + 8;
+        if (top + iconPop.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - iconPop.offsetHeight - 8);
+        iconPop.style.top = top + "px";
+      }
+      function closePop() { iconPop.classList.remove("show"); iconTarget = null; }
+
+      ipGrid.addEventListener("click", function (ev) {
+        var b = ev.target.closest ? ev.target.closest("button") : null;
+        if (b) setIcon(b.textContent);
+      });
+      ipClear.addEventListener("click", function () { setIcon(""); });
+      ipCus.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" && ipCus.value.trim()) setIcon(ipCus.value.trim());
+      });
+      document.addEventListener("click", function (ev) {
+        if (!iconPop.classList.contains("show")) return;
+        var inPop = iconPop.contains(ev.target);
+        var inIconBtn = ev.target.closest ? !!ev.target.closest(".e-icon") : false;
+        if (!inPop && !inIconBtn) closePop();
+      });
+
+      /* ---- 入口行 ---- */
+      function buildRow(it, idx) {
+        var div = document.createElement("div");
+        div.className = "ent";
+        div.dataset.idx = idx;
+        div.innerHTML =
+          '<div class="ent-l1">' +
+            '<span class="ent-no"></span>' +
+            '<button type="button" class="e-icon" data-k="icon" title="选择图标"></button>' +
+            '<input class="e-title" data-k="title" placeholder="入口标题">' +
+            '<select class="e-type" data-k="type"><option value="link">访问</option><option value="download">下载</option></select>' +
+            '<select class="e-color" data-k="color">' + COLOR_HTML + '</select>' +
+            '<span class="ent-ops">' +
+              '<button type="button" data-op="up"   title="上移">↑</button>' +
+              '<button type="button" data-op="down" title="下移">↓</button>' +
+              '<button type="button" data-op="del" class="del" title="删除">✕</button>' +
+            '</span>' +
+          '</div>' +
+          '<div class="ent-l2">' +
+            '<input class="e-url"  data-k="url"  placeholder="链接：网址 或 文件名(下载型)">' +
+            '<input class="e-desc" data-k="desc" placeholder="描述(可留空)">' +
+          '</div>' +
+          '<div class="ent-l2">' +
+            '<input class="e-cat" data-k="cat" list="catOpts" placeholder="分类：多个用逗号分隔，如 实用,音乐（可留空）">' +
+          '</div>';
+        div.querySelector(".ent-no").textContent = idx + 1;
+        div.querySelector(".e-icon").textContent = (it.icon && it.icon.trim()) ? it.icon : "+";
+        div.querySelector(".e-title").value = it.title || "";
+        div.querySelector(".e-type").value  = it.type === "download" ? "download" : "link";
+        div.querySelector(".e-color").value = it.color || "";
+        div.querySelector(".e-url").value   = it.url   || "";
+        div.querySelector(".e-desc").value  = it.desc  || "";
+        div.querySelector(".e-cat").value   = it.cat   || "";
+        return div;
+      }
+      var searchKw = "";          // 入口搜索关键字(实时过滤列表显示)
+      var fSearchEl = null, fCountEl = null;
+      function buildList() {
+        fEntries.innerHTML = "";
+        var kw = searchKw.trim().toLowerCase();
+        var matched = 0;
+        cur.entries.forEach(function (it, i) {
+          if (kw) {
+            var hay = ((it.title || "") + " " + (it.desc || "") + " " +
+                       (it.url || "") + " " + (it.icon || "") + " " + (it.cat || "") + " " + it.type).toLowerCase();
+            if (hay.indexOf(kw) === -1) return;   // 不匹配则此行不显示
+          }
+          matched++;
+          fEntries.appendChild(buildRow(it, i));
+        });
+        if (!matched) {
+          var p = document.createElement("p");
+          p.className = "tag go";
+          p.style.cssText = "justify-self:center;margin:10px 0;padding:10px 16px;font-size:13px;text-align:center;";
+          p.textContent = kw ? "没有匹配的入口，换个关键字试试" : "还没有入口，点下方「＋ 新增入口」添加";
+          fEntries.appendChild(p);
+        }
+        if (fCountEl) {
+          fCountEl.textContent = kw ? matched + "/" + cur.entries.length : cur.entries.length + " 条";
+        }
+        // 同步分类输入提示(datalist)
+        var dl = $id("catOpts");
+        if (dl) dl.innerHTML = cur.categories.map(function (c) { return '<option value="' + c + '">'; }).join("");
+      }
+
+      /* ---- 表单与数据双向绑定 ---- */
+      function parseCats(str) {
+        return String(str || "").split(/[,，、\s]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+      function fillForm() {
+        $id("fSite").value = cur.siteName;
+        $id("fSlog").value = cur.slogan;
+        $id("fFoot").value = cur.footer;
+        $id("fPass").value = cur.adminPass;
+        $id("fCats").value = cur.categories.join(",");
+        buildList();
+      }
+      function collect() {
+        cur.siteName  = $id("fSite").value;
+        cur.slogan    = $id("fSlog").value;
+        cur.footer    = $id("fFoot").value;
+        cur.categories = parseCats($id("fCats").value);
+        if ($id("fPass").value !== "") cur.adminPass = $id("fPass").value;
+        cur.entries   = cur.entries.map(norm);
+      }
+      /* 触发浏览器下载 config.json */
+      function downloadFile(name, content, mime) {
+        var blob = new Blob([content], { type: mime || "application/octet-stream" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 200);
+      }
+      function saveNow() {
+        collect();
+        saved = {
+          siteName:  cur.siteName, slogan: cur.slogan, footer: cur.footer,
+          adminPass: cur.adminPass, categories: cur.categories,
+          entries:   cur.entries.map(norm)
+        };
+        try {
+          localStorage.setItem(LS_KEY, JSON.stringify(saved));
+        } catch (e) {
+          alert("浏览器拒绝写入缓存：" + e.message + "\n不影响生成 config.json，请继续。");
+        }
+        // 生成 config.json 供下载，覆盖本文件夹里的旧文件后运行 同步.bat 即可上线
+        downloadFile("config.json", JSON.stringify(buildConfigData(), null, 2),
+                     "application/json;charset=utf-8");
+        toast("已生成 config.json（保存在浏览器下载目录）。请放到本文件夹覆盖旧的，再双击 同步.bat 推送上线");
+      }
+
+      $id("fSite").addEventListener("input", function () { cur.siteName = this.value; render(); });
+      $id("fSlog").addEventListener("input", function () { cur.slogan   = this.value; render(); });
+      $id("fFoot").addEventListener("input", function () { cur.footer   = this.value; render(); });
+      $id("fCats").addEventListener("input", function () { cur.categories = parseCats(this.value); buildList(); render(); });
+      $id("fPass").addEventListener("input", function () { if (this.value !== "") cur.adminPass = this.value; });
+      $id("pwToggle").addEventListener("click", function () {
+        var inp = $id("fPass");
+        var show = inp.type === "password";
+        inp.type = show ? "text" : "password";
+        this.textContent = show ? "隐藏" : "显示";
+      });
+      fEntries.addEventListener("scroll", closePop);
+      if (fSearchEl) fSearchEl.addEventListener("input", function () {
+        searchKw = this.value;
+        buildList();
+      });
+
+      fEntries.addEventListener("input", function (ev) {
+        var t = ev.target;
+        if (!t || !t.dataset || !t.dataset.k) return;
+        var row = t.closest(".ent");
+        if (!row) return;
+        cur.entries[+row.dataset.idx][t.dataset.k] = t.value;
+        render();
+      });
+      fEntries.addEventListener("change", function (ev) {
+        var t = ev.target;
+        if (!t || !t.dataset || !t.dataset.k) return;
+        var row = t.closest(".ent");
+        if (!row) return;
+        cur.entries[+row.dataset.idx][t.dataset.k] = t.value;
+        render();
+      });
+      fEntries.addEventListener("click", function (ev) {
+        var rowEl = ev.target.closest ? ev.target.closest(".ent") : null;
+        if (!rowEl) return;
+        var i = +rowEl.dataset.idx;
+        var opBtn = ev.target.closest ? ev.target.closest("button[data-op]") : null;
+        if (opBtn) {
+          if (opBtn.dataset.op === "up" && i > 0) {
+            var t = cur.entries[i]; cur.entries[i] = cur.entries[i - 1]; cur.entries[i - 1] = t;
+          } else if (opBtn.dataset.op === "down" && i < cur.entries.length - 1) {
+            var u = cur.entries[i]; cur.entries[i] = cur.entries[i + 1]; cur.entries[i + 1] = u;
+          } else if (opBtn.dataset.op === "del") {
+            cur.entries.splice(i, 1);
+          } else { return; }
+          buildList(); render();
+          return;
+        }
+        if (ev.target.classList && ev.target.classList.contains("e-icon")) {
+          openPick(ev.target, i);
+        }
+      });
+
+      $id("bAdd").addEventListener("click", function () {
+        if (searchKw) { searchKw = ""; if (fSearchEl) fSearchEl.value = ""; } // 有搜索时先清空，保证新行可见
+        cur.entries.push(norm(null));
+        buildList(); render();
+        var rows = fEntries.querySelectorAll(".ent");
+        if (rows.length) {
+          rows[rows.length - 1].querySelector(".e-title").focus();
+          fEntries.scrollTop = fEntries.scrollHeight; // 滚到最底部，让新行可见
+        }
+      });
+      $id("bSave").addEventListener("click", saveNow);
+      $id("bReset").addEventListener("click", function () {
+        if (!confirm("恢复默认会清空本机缓存并回到 index.html 中的默认值，确定继续？")) return;
+        try { localStorage.removeItem(LS_KEY); } catch (e) {}
+        saved = null; cur = defaults();
+        fillForm(); render();
+        toast("已恢复默认并清空本机缓存");
+      });
+      $id("bExport").addEventListener("click", function () {
+        collect();
+        downloadFile("主页配置.json", JSON.stringify(buildConfigData(), null, 2),
+                     "application/json;charset=utf-8");
+        toast("已导出配置文件(主页配置.json)");
+      });
+      $id("bImport").addEventListener("click", function () { $id("fFile").click(); });
+      $id("fFile").addEventListener("change", function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var o = JSON.parse(reader.result);
+            var arr = Array.isArray(o) ? o : (o && Array.isArray(o.entries) ? o.entries : null);
+            if (!arr) { alert("导入文件格式不对：需包含 entries 数组"); return; }
+            if (o && typeof o === "object" && !Array.isArray(o)) {
+              if (typeof o.siteName === "string") cur.siteName = o.siteName;
+              if (typeof o.slogan === "string")   cur.slogan   = o.slogan;
+              if (typeof o.footer === "string")   cur.footer   = o.footer;
+              if (typeof o.adminPass === "string" && o.adminPass !== "") cur.adminPass = o.adminPass;
+            }
+            cur.entries = arr.map(norm);
+            saved = null;
+            fillForm(); render();
+            toast("已导入，点「保存到本机」才会写入本浏览器缓存");
+          } catch (e) { alert("导入失败：" + e.message); }
+        };
+        reader.readAsText(file);
+        this.value = "";
+      });
+
+      /* ---- 口令 + 打开/关闭 ---- */
+      function openPass() {
+        pwMask.style.display = "flex";
+        $id("pwErr").textContent = "";
+        $id("pwIn").value = "";
+        setTimeout(function () { $id("pwIn").focus(); }, 30);
+      }
+      function closePw() { pwMask.style.display = "none"; }
+      function openAdm() {
+        admWrap.classList.add("on"); gear.classList.add("off");
+        searchKw = ""; if (fSearchEl) fSearchEl.value = ""; // 重进后台时重置搜索
+        fillForm();
+      }
+      function closeAdm() { admWrap.classList.remove("on"); gear.classList.remove("off"); }
+
+      gear.addEventListener("click", function () {
+        if (admWrap.classList.contains("on")) closeAdm(); else openPass();
+      });
+      $id("pwOk").addEventListener("click", function () {
+        if ($id("pwIn").value === cur.adminPass) { closePw(); openAdm(); }
+        else $id("pwErr").textContent = "口令不对，请重试（默认 admin888）";
+      });
+      $id("pwIn").addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") $id("pwOk").click();
+      });
+      $id("pwNo").addEventListener("click", closePw);
+      pwMask.addEventListener("click", function (ev) { if (ev.target === pwMask) closePw(); });
+      $id("admX").addEventListener("click", closeAdm);
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") { closePop(); closePw(); closeAdm(); }
+      });
+
+      /* 展示模式：读取同目录 config.json 作为线上数据源 */
+      loadRemote();
+    })();
+  </script>
+</body>
+</html>
