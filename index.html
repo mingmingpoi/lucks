@@ -338,6 +338,16 @@
   .e-url{flex:1.4; min-width:0;}
   .e-desc{flex:1; min-width:0;}
   .e-cat{flex:1 1 100%; min-width:0;}
+  .cat-line{align-items:center;}
+  .cat-chips{flex:1; display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-width:0;}
+  .cat-chip{border:1px solid #e6def4; background:#fff; color:#6a6286; border-radius:999px;
+            padding:3px 12px; font-size:12.5px; cursor:pointer; line-height:1.5;
+            transition:background .15s ease, border-color .15s ease, color .15s ease;}
+  .cat-chip:hover{border-color:#a78bfa; color:#6a4fd8;}
+  .cat-chip.on{background:#efe6ff; border-color:#b9a0ff; color:#6a4fd8; font-weight:600;}
+  .cat-chip.extra{border-style:dashed; color:#8a819f;}
+  .cat-chip.extra.on{background:#fff1e6; border-color:#f5cf9f; color:#c97a12;}
+  .cat-hint{font-size:11.5px; color:#b3a8cf;}
 
   .icon-pop{position:fixed; z-index:90; width:272px; background:#fff; border-radius:14px;
             box-shadow:0 18px 50px rgba(60,30,110,.28); padding:10px; display:none;}
@@ -470,6 +480,25 @@
   .acc-open .acc-bd #fEntries{flex:1 1 auto; min-height:0;}
   .acc-note{margin:6px 2px 4px; font-size:12px; line-height:1.6; color:#a89cc4;
             background:#fbfaff; border:1px dashed #ece6f9; border-radius:10px; padding:8px 10px;}
+  .mem-manage{align-items:flex-start;}
+  #mArea{flex:1; min-width:0; display:flex; flex-direction:column; gap:7px;}
+  .mem-item{display:flex; align-items:center; gap:8px; background:#faf9fd;
+            border:1px solid #efe9fb; border-radius:10px; padding:7px 10px; font-size:13px;}
+  .mem-item.me{box-shadow:inset 0 0 0 1px #d6c9f3;}
+  .mem-em{font-size:16px; line-height:1;}
+  .mem-nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+          font-weight:600; color:#3f3a55;}
+  .mem-tag{font-size:11px; padding:2px 9px; border-radius:999px; flex:0 0 auto;}
+  .mem-tag.admin{color:#fff; background:linear-gradient(135deg,#8a5cff,#5b8cff);}
+  .mem-tag.normal{color:#8a819f; background:#f1eef8;}
+  .mem-del{border:none; background:#ffeceb; color:#e5484d; border-radius:8px;
+           padding:4px 10px; font-size:12px; cursor:pointer; flex:0 0 auto;}
+  .mem-del:hover{filter:brightness(.96);}
+  .mem-act{border:none; background:#efe8ff; color:#7c5cff; border-radius:9px;
+           padding:7px 12px; cursor:pointer; font-size:12.5px; font-weight:600; align-self:flex-start;}
+  .mem-act:hover{background:#e6dcfd;}
+  .mem-hint{font-size:12px; color:#a89cc4; line-height:1.7; background:#fbfaff;
+            border:1px dashed #ece6f9; border-radius:10px; padding:7px 10px;}
   #fEntries{overflow-y:auto; overflow-x:hidden; padding:2px 6px 10px 0;}
   #fEntries::-webkit-scrollbar{width:8px;}
   #fEntries::-webkit-scrollbar-thumb{background:#e3daf5; border-radius:8px;}
@@ -511,6 +540,7 @@
         {
           "name": "主人",
           "emoji": "👤",
+          "owner": true,
           "enc": {
             "salt": "rLwHgwudbLrM8EZzKYqyUQ==",
             "iv": "lFoCfhKwZ78G4O2l",
@@ -576,6 +606,7 @@
       var V_KEY  = "lucks_home_doc_v3";    // 本机密文库（与 config.json 同格式 v3：users 数组）
       var KS_SES = "lucks_home_key_ses";   // 会话钥匙(sessionStorage：关浏览器即忘)
       var KS_MEM = "lucks_home_key_mem";   // “记住此设备”钥匙(localStorage)
+      var LWIN   = "lucks_home_local_first"; // 是否“本机优先”：保存过的版本刷新后仍显示（未发布版）
 
       var cur = { siteName:"", slogan:"", footer:"", categories:[],
                   theme:"auto", engine:"bing", showClock:true, showQuote:true,
@@ -594,6 +625,7 @@
       var uid = -1;           // 当前登录成员在 activeDoc.users 的下标
       var lockDoc = null;     // 锁屏展示用的文档
       var lockUid = 0;        // 锁屏当前选中的成员下标
+      var localFirst = false; // 已在本机保存过（未发布），刷新后应优先显示本机版
 
       function norm(e) {
         e = e || {};
@@ -700,20 +732,33 @@
       /* ---------- 数据源读取（整文档 = {v:3, siteName, users[]}） ---------- */
       function toDoc(o) {
         if (!o || typeof o !== "object") return null;
-        if (o.v === 3 && Array.isArray(o.users) && o.users.length) return o;
-        if (o.v === 2 && o.enc) {   // 兼容旧单用户密文 → 转为主人一人
-          return { v: 3, siteName: o.siteName || "", users: [{ name: "主人", emoji: "👤", enc: o.enc }] };
+        if (o.v === 3 && Array.isArray(o.users) && o.users.length) {
+          // 确保存在管理员：历史版本没标 owner 时，把首位成员默认视为管理员
+          if (!o.users.some(function (u) { return u && u.owner; })) o.users[0].owner = true;
+          return o;
+        }
+        if (o.v === 2 && o.enc) {   // 兼容旧单用户密文 → 升级为主管理员一人
+          return { v: 3, siteName: o.siteName || "", users: [{ name: "主人", emoji: "👤", owner: true, enc: o.enc }] };
         }
         return null;
       }
       function docToLocal(doc) {
         try { localStorage.setItem(V_KEY, JSON.stringify(doc)); } catch (e) {}
       }
+      function setLocalFirst() {
+        localFirst = true;
+        try { localStorage.setItem(LWIN, "1"); } catch (e) {}
+      }
+      function clearLocalFirst() {
+        localFirst = false;
+        try { localStorage.removeItem(LWIN); } catch (e) {}
+      }
       function loadLocalState() {
         try {
           var r = localStorage.getItem(V_KEY);
           if (r) { var o = JSON.parse(r); var d = toDoc(o); if (d) localDoc = d; }
         } catch (e) {}
+        try { localFirst = localStorage.getItem(LWIN) === "1"; } catch (e) {}
         try {
           var r2 = localStorage.getItem(LS_OLD);
           if (r2) { var o2 = JSON.parse(r2); if (o2 && typeof o2 === "object" && Array.isArray(o2.entries)) legacyLocal = o2; }
@@ -732,10 +777,15 @@
         if (typeof SITE_DOC !== "undefined" && SITE_DOC && Array.isArray(SITE_DOC.users)) arr.push({ d: SITE_DOC, s: "embedded" });
         return arr;
       }
-      function lockDocPick() {   // 锁屏用哪份文档（remote>local>embedded）
+      function lockDocPick() {   // 锁屏用哪份文档（默认 remote>local>embedded；本机保存过则 local 优先）
         if (!remoteDoc && !localDoc && hasLegacy()) {   // 有旧明文但还没任何密文 → 走迁移，跳过内置示例
           lockDoc = null;
           return null;
+        }
+        if (localFirst && localDoc) {
+          lockDoc = localDoc;
+          if (lockDoc && lockUid >= lockDoc.users.length) lockUid = 0;
+          return lockDoc;
         }
         var list = docSources();
         lockDoc = list.length ? list[0].d : null;
@@ -801,10 +851,11 @@
           var obj = normalizeCfg(legacyData());
           var lb = $id("lkGo"); if (lb) lb.disabled = true;
           makeVault(obj, pwd).then(function (enc) {
-            var ndoc = { v: 3, siteName: obj.siteName || "我的主页", users: [{ name: "我", emoji: "👤", enc: enc }] };
+            var ndoc = { v: 3, siteName: obj.siteName || "我的主页", users: [{ name: "我", emoji: "👤", owner: true, enc: enc }] };
             lockDoc = ndoc; lockUid = 0;
             return establishSession(ndoc.users[0], pwd, $id("lkRemember").checked).then(function () {
               docToLocal(ndoc);
+              setLocalFirst();
               bootWith(obj, ndoc, 0, "migrated", { needPublish: true });
             });
           }).catch(function () { if (errEl) errEl.textContent = "加密失败，请重试"; if (lb) lb.disabled = false; });
@@ -874,7 +925,7 @@
             var b = document.createElement("button");
             b.type = "button";
             b.className = "lk-user" + (i === lockUid ? " on" : "");
-            b.innerHTML = '<span class="em">' + (u.emoji || "👤") + '</span>' + (u.name || "成员");
+            b.innerHTML = '<span class="em">' + (u.emoji || "👤") + '</span>' + (u.name || "成员") + (u.owner ? ' <em class="lk-own">👑</em>' : "");
             b.addEventListener("click", function () {
               lockUid = i;
               var err = $id("lkErr"); if (err) err.textContent = "";
@@ -1312,6 +1363,7 @@
       /* ---- 线上 config.json 已在“上锁流程”里读取；这里仅窗口重新聚焦时增量检查 ---- */
       function pollRemote() {
         if (!unlocked || typeof fetch !== "function") return;
+        if (localFirst) return;      // 本机优先模式：不自动被线上覆盖
         if (admWrap.classList.contains("on")) return;      // 后台编辑中不打断
         fetch("config.json", { cache: "no-store" })
           .then(function (r) { if (!r.ok) throw new Error("nf"); return r.json(); })
@@ -1360,11 +1412,10 @@
               '</div>' +
             '</div>' +
             '<div class="acc fold">' +
-              '<button type="button" class="acc-hd"><span>� 口令与成员</span><span class="hd-arrow">▾</span></button>' +
+              '<button type="button" class="acc-hd"><span>🔐 口令与成员</span><span class="hd-arrow">▾</span></button>' +
               '<div class="acc-bd">' +
                 '<div class="adm-row"><label>我的口令</label><button type="button" id="bChPwd">🔑 修改口令</button><button type="button" id="bBackup">⬇ 明文备份</button><button type="button" id="bLock">🚪 退出登录</button></div>' +
-                '<div class="adm-row"><label>成员</label><button type="button" id="mAdd">＋ 添加成员</button><button type="button" id="mDel">🗑 移除本成员</button><button type="button" id="mSwitch">⇄ 切换成员</button></div>' +
-                '<div class="acc-note">成员各用自己的口令，空间互相独立、不可互看。成员变更后请「下载 config.json」发布。</div>' +
+                '<div class="adm-row mem-manage"><label>成员管理</label><div id="mArea"></div></div>' +
               '</div>' +
             '</div>' +
             '<div class="adm-btns">' +
@@ -1493,8 +1544,8 @@
             '<input class="e-url"  data-k="url"  placeholder="链接：网址 或 文件名(下载型)">' +
             '<input class="e-desc" data-k="desc" placeholder="描述(可留空)">' +
           '</div>' +
-          '<div class="ent-l2">' +
-            '<input class="e-cat" data-k="cat" list="catOpts" placeholder="分类：多个用逗号分隔，如 实用,音乐（可留空）">' +
+          '<div class="ent-l2 cat-line">' +
+            '<div class="cat-chips" data-k="cat"></div>' +
           '</div>';
         div.querySelector(".ent-no").textContent = idx + 1;
         div.querySelector(".e-icon").textContent = (it.icon && it.icon.trim()) ? it.icon : "+";
@@ -1503,8 +1554,27 @@
         div.querySelector(".e-color").value = it.color || "";
         div.querySelector(".e-url").value   = it.url   || "";
         div.querySelector(".e-desc").value  = it.desc  || "";
-        div.querySelector(".e-cat").value   = it.cat   || "";
+        paintChips(div, it);
         return div;
+      }
+      function paintChips(div, it) {   // 把分类画成可多选的 chips（未分类里出现过的"其他"也会列出，可点掉）
+        var box = div.querySelector(".cat-chips");
+        if (!box) return;
+        var sel = catsOf(it);
+        var keys = cur.categories.slice();
+        sel.forEach(function (s) { if (keys.indexOf(s) === -1) keys.push(s); });
+        var html = "";
+        if (!keys.length) {
+          html = '<span class="cat-hint">（没有分类，可在上方「站点设置 → 分类标签」里添加）</span>';
+        } else {
+          keys.forEach(function (k) {
+            var on = sel.indexOf(k) > -1;
+            html += '<button type="button" class="cat-chip' + (on ? " on" : "") +
+                    (cur.categories.indexOf(k) === -1 ? " extra" : "") + '" data-c="' +
+                    k.replace(/"/g, "&quot;") + '">' + (on ? "✓ " : "") + k + "</button>";
+          });
+        }
+        box.innerHTML = html;
       }
       var searchKw = "";          // 入口搜索关键字(实时过滤列表显示)
       var fSearchEl = null, fCountEl = null;
@@ -1567,11 +1637,10 @@
           activeDoc.siteName = cur.siteName;
           activeDoc.users[uid].enc = enc;
           docToLocal(activeDoc);
+          setLocalFirst();
           needPublish = true;
           updateNote();
-          toast(cfgSrc === "remote" || cfgSrc === "migrated"
-            ? "已在本机加密备份。发布给别人：用「下载 config.json」替换仓库文件。"
-            : "已加密保存到本机。");
+          toast("已保存并设为“本机优先”：刷新后会一直显示当前版本，直到你发布或重置");
         });
       }
       function configJSON() { return cfgOfCur(); }   // 明文内存对象（仅用于明文备份）
@@ -1590,9 +1659,11 @@
           el.innerHTML = "数据已从<b>旧版明文</b>加密迁移到本机 " + whoHtml + "。请务必用「下载 config.json」<b>替换仓库里的 config.json</b>并提交；替换前他人仍可直接读到明文旧文件。";
         } else if (cfgSrc === "local") {
           el.className = "adm-note src-local";
-          el.innerHTML = needPublish
-            ? "当前显示<b>本机加密缓存</b> " + whoHtml + "（已修改未发布）。发布：点「下载 config.json」替换仓库文件并提交。"
-            : "当前显示<b>本机加密缓存</b> " + whoHtml + "。发布给别人：点「下载 config.json」上传仓库替换并提交；其他成员与访客需各自口令才能查看。";
+          if (needPublish) {
+            el.innerHTML = "<b>本机优先版（未发布）</b> " + whoHtml + "：保存过、刷新不会丢。发布：点「下载 config.json」替换仓库文件并提交。";
+          } else {
+            el.innerHTML = "<b>本机优先版</b> " + whoHtml + "：刷新显示当前内容。要拉取线上最新：发布替换仓库后，点「↺ 重置本机缓存」再刷新。";
+          }
         } else {
           el.className = "adm-note src-embedded";
           el.innerHTML = "当前是<b>内置示例</b> " + whoHtml + "（加密兜底，仅供首次/离线体验）。正式使用：改好数据 → 「下载 config.json」上传仓库替换 → 建议在后台「修改口令/添加成员」整理成员。";
@@ -1627,6 +1698,7 @@
                  showClock: true, showQuote: true, showWeather: true, showTodo: true, entries: [] };
       }
       function doAddMember() {
+        if (!isAdmin()) { toast("仅管理员可添加成员"); return; }
         var nm = $id("nmName").value.trim(), em = $id("nmEmoji").value.trim(),
             p1 = $id("nmP1").value, p2 = $id("nmP2").value, err = $id("nmErr");
         if (!nm) { err.textContent = "请填写名字"; return; }
@@ -1639,53 +1711,91 @@
           activeDoc.users.push({ name: nm, emoji: em || "👤", enc: enc });
           if (cfgSrc === "embedded") cfgSrc = "local";
           docToLocal(activeDoc);
+          setLocalFirst();
           needPublish = true;
           closeNm(); ok.disabled = false;
           fillWho();
+          renderMemUI();
           updateNote();
           toast("已添加成员「" + nm + "」并加密保存。请用「下载 config.json」发布，对方才可登录");
         }).catch(function () { err.textContent = "加密失败，请重试"; ok.disabled = false; });
       }
-      function doRemoveMember() {
+      function isAdmin() { return !!(activeDoc && activeDoc.users[uid] && activeDoc.users[uid].owner); }
+      function removeMemberAt(idx) {
+        if (!isAdmin()) { toast("仅管理员可管理成员"); return; }
         if (!activeDoc || activeDoc.users.length <= 1) { toast("至少保留一位成员"); return; }
-        var who = whoAmI();
-        if (!confirm("将移除成员「" + (who.name || "") + "」并删除其全部数据（不可恢复）。\n移除结果需要发布后才会对其他人生效。确定继续？")) return;
+        var t = activeDoc.users[idx];
+        if (!t) return;
+        if (t.owner) { toast("不能删除管理员账号"); return; }
+        if (idx === uid) { toast("不能删除当前登录的账号，请先切换成员"); return; }
+        if (!confirm("将删除成员「" + (t.name || "") + "」及其全部数据（不可恢复）。\n删除需发布后对其他人生效，确定继续？")) return;
         var copy;
         try { copy = JSON.parse(JSON.stringify(activeDoc)); } catch (e) { return; }
-        copy.users.splice(uid, 1);
+        copy.users.splice(idx, 1);
         if (!copy.users.length) { toast("至少要保留一位成员"); return; }
         docToLocal(copy);
+        setLocalFirst();
         needPublish = true;
-        // 直接导出“移除后”的新版 config.json，方便立即发布
+        // 直接导出“删除后”的新版 config.json，方便立即发布
         var blob = new Blob([JSON.stringify(copy, null, 2)], { type: "application/json;charset=utf-8" });
         var a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "config.json";
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 200);
-        toast("已生成移除成员后的 config.json，请上传替换仓库并提交，之后刷新即生效");
+        toast("已生成删除成员后的 config.json，请上传替换仓库并提交");
         clearKeys();
         setTimeout(function () { location.reload(); }, 1500);
       }
+      function renderMemUI() {
+        var area = $id("mArea");
+        if (!area || !activeDoc) return;
+        var me = whoAmI();
+        if (isAdmin()) {
+          var html = "";
+          activeDoc.users.forEach(function (u, i) {
+            html += '<div class="mem-item' + (i === uid ? " me" : "") + '">' +
+              '<span class="mem-em">' + (u.emoji || "👤") + '</span>' +
+              '<span class="mem-nm">' + (u.name || "成员") + (i === uid ? "（我）" : "") + '</span>' +
+              (u.owner ? '<span class="mem-tag admin">管理员</span>' : '<span class="mem-tag normal">成员</span>') +
+              ((!u.owner && i !== uid) ? '<button type="button" class="mem-del" data-act="del" data-idx="' + i + '">删除</button>' : '') +
+              '</div>';
+          });
+          area.innerHTML = html +
+            '<button type="button" class="mem-act" data-act="add">＋ 添加成员</button>' +
+            '<div class="mem-hint">管理员可添加 / 删除成员；成员各用自己的口令，空间互不可见。变更后请「下载 config.json」发布。</div>';
+        } else {
+          area.innerHTML =
+            '<div class="mem-item me"><span class="mem-em">' + (me.emoji || "👤") + '</span>' +
+            '<span class="mem-nm">' + (me.name || "成员") + '（我）</span><span class="mem-tag normal">成员</span></div>' +
+            '<div class="mem-hint">你是普通成员，成员由管理员统一管理；可修改自己的口令与内容。</div>' +
+            '<button type="button" class="mem-act" data-act="switch">⇄ 切换成员</button>';
+        }
+      }
       function fillWho() {
         var who = whoAmI();
-        var txt = (who.emoji || "") + " " + (who.name || "成员");
+        var txt = (isAdmin() ? "👑 " : "") + (who.emoji || "") + " " + (who.name || "成员");
         var n = activeDoc && activeDoc.users ? activeDoc.users.length : 1;
         var chip = $id("whoChip");
         if (chip) chip.textContent = n + " 位成员 · " + txt;
         var old = $id("mWho");
         if (old) old.textContent = txt;
       }
-      $id("mAdd").addEventListener("click", openNm);
+      $id("mArea").addEventListener("click", function (ev) {
+        var b = ev.target.closest ? ev.target.closest("button[data-act]") : null;
+        if (!b) return;
+        var act = b.getAttribute("data-act");
+        if (act === "add") openNm();
+        else if (act === "del") removeMemberAt(+b.getAttribute("data-idx"));
+        else if (act === "switch") {
+          if (!confirm("切换成员将退出当前登录回到锁屏选择？")) return;
+          closeAdm(); clearKeys(); location.reload();
+        }
+      });
       $id("nmNo").addEventListener("click", closeNm);
       $id("nmOk").addEventListener("click", doAddMember);
       $id("nmName").addEventListener("keydown", function (ev) { if (ev.key === "Enter") $id("nmEmoji").focus(); });
       $id("nmP2").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doAddMember(); });
-      $id("mDel").addEventListener("click", doRemoveMember);
-      $id("mSwitch").addEventListener("click", function () {
-        if (!confirm("切换成员将退出当前登录回到锁屏选择？")) return;
-        closeAdm(); clearKeys(); location.reload();
-      });
       nmMask.addEventListener("click", function (ev) { if (ev.target === nmMask) closeNm(); });
       fEntries.addEventListener("scroll", closePop);
       if (fSearchEl) fSearchEl.addEventListener("input", function () {
@@ -1727,6 +1837,18 @@
         }
         if (ev.target.classList && ev.target.classList.contains("e-icon")) {
           openPick(ev.target, i);
+          return;
+        }
+        var chip = ev.target.closest ? ev.target.closest(".cat-chip") : null;
+        if (chip) {
+          var cname = chip.getAttribute("data-c");
+          var arr = catsOf(cur.entries[i]);
+          var pos = arr.indexOf(cname);
+          if (pos > -1) arr.splice(pos, 1); else arr.push(cname);
+          cur.entries[i].cat = arr.join(",");
+          paintChips(rowEl, cur.entries[i]);   // 只刷新本行 chips，不重排，保留滚动位置
+          render();
+          return;
         }
       });
 
@@ -1742,8 +1864,9 @@
       });
       $id("bSave").addEventListener("click", saveNow);
       $id("bReset").addEventListener("click", function () {
-        if (!confirm("将清除本机加密缓存与登录钥匙并重新加载（线上内容不受影响）。确定？")) return;
+        if (!confirm("将清除本机缓存/登录钥匙/“本机优先”，并重新回到线上或内置版本。确定？")) return;
         try { localStorage.removeItem(V_KEY); } catch (e) {}
+        clearLocalFirst();
         clearKeys();
         location.reload();
       });
@@ -1771,6 +1894,7 @@
         reVaultWithCurrentKey(cfgOfCur()).then(function (enc) {
           copy.users[uid].enc = enc;
           docToLocal(copy);
+          setLocalFirst();
           needPublish = false; updateNote();
           cb(JSON.stringify(copy, null, 2));
         });
@@ -1829,6 +1953,7 @@
             activeDoc.siteName = cur.siteName;
             activeDoc.users[uid].enc = enc;
             docToLocal(activeDoc);
+            setLocalFirst();
             needPublish = true;
             closeCp(); okBtn.disabled = false;
             updateNote();
@@ -1884,6 +2009,7 @@
         searchKw = ""; if (fSearchEl) fSearchEl.value = ""; // 重进后台时重置搜索
         fillForm();
         fillWho();
+        renderMemUI();
         updateNote();
       }
       function closeAdm() { admWrap.classList.remove("on"); gear.classList.remove("off"); }
