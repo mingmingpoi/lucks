@@ -4,6 +4,12 @@
   "footer": "",
   "adminPass": "admin888",
   "categories": ["实用", "学习", "工具", "艺术", "生活", "娱乐", "视频", "音乐", "图片", "游戏"],
+  "theme": "auto",
+  "engine": "bing",
+  "showClock": true,
+  "showQuote": true,
+  "showWeather": true,
+  "showTodo": true,
   "entries": [
     { "type": "link", "icon": "🌐", "title": "示例网站", "desc": "跳转网页示例：点开新窗口", "url": "https://www.example.com", "color": "", "cat": "工具,实用" },
     { "type": "download", "icon": "📄", "title": "示例文件", "desc": "下载文件示例：文件与网页放同一目录", "url": "示例文件.pdf", "color": "mint", "cat": "学习" },
