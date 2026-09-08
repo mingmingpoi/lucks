@@ -381,6 +381,7 @@
   #bAdd{background:#fff0f3; color:#e5484d;}
   #bSave{background:linear-gradient(135deg,#43e97b,#38c8a8); color:#fff;}
   #bReset{background:#f1eef8; color:#5b5470;}
+  #bToOnline{background:#f1eef8; color:#5b5470; box-shadow:inset 0 0 0 1px #e3daf5;}
   #bExport,#bImport{background:#e8f2ff; color:#2563eb;}
 
   .toast{position:fixed; left:50%; bottom:34px; transform:translateX(-50%); z-index:85;
@@ -1424,7 +1425,7 @@
               '<button type="button" id="bCopy">📋 复制新配置</button>' +
               '<button type="button" id="bExport">⬇ 下载 config.json</button>' +
               '<button type="button" id="bImport">📥 导入配置</button>' +
-              '<button type="button" id="bReset">↺ 重置本机缓存</button>' +
+              '<button type="button" id="bToOnline">🔄 还原线上版</button>' +
               '<input type="file" id="fFile" accept=".json,application/json" style="display:none">' +
             '</div>' +
           '</div>' +
@@ -1662,7 +1663,7 @@
           if (needPublish) {
             el.innerHTML = "<b>本机优先版（未发布）</b> " + whoHtml + "：保存过、刷新不会丢。发布：点「下载 config.json」替换仓库文件并提交。";
           } else {
-            el.innerHTML = "<b>本机优先版</b> " + whoHtml + "：刷新显示当前内容。要拉取线上最新：发布替换仓库后，点「↺ 重置本机缓存」再刷新。";
+            el.innerHTML = "<b>本机优先版</b> " + whoHtml + "：刷新显示当前内容。要拉取线上最新：先发布替换仓库，再点「🔄 还原线上版」。";
           }
         } else {
           el.className = "adm-note src-embedded";
@@ -1681,8 +1682,11 @@
       $id("cpNew2").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doChangePwd(); });
       $id("bBackup").addEventListener("click", exportPlainBackup);
       $id("bLock").addEventListener("click", function () {
-        if (!confirm("退出登录并重新锁定本页？")) return;
-        closeAdm(); clearKeys(); location.reload();
+        if (!confirm("退出登录并重新锁定本页？本机已保存的数据与口令会保留。")) return;
+        closeAdm();
+        try { localStorage.removeItem(LS_OLD); } catch (e) {}
+        clearKeys();
+        location.reload();
       });
       /* ---- 成员管理：添加 / 移除 / 切换 ---- */
       var nmMask = $id("nmMask");
@@ -1863,9 +1867,10 @@
         }
       });
       $id("bSave").addEventListener("click", saveNow);
-      $id("bReset").addEventListener("click", function () {
-        if (!confirm("将清除本机缓存/登录钥匙/“本机优先”，并重新回到线上或内置版本。确定？")) return;
+      $id("bToOnline").addEventListener("click", function () {
+        if (!confirm("还原线上版会丢弃本机未发布的修改，并把口令/成员恢复到仓库版（若仓库仍是旧口令，则旧口令会重新生效）。\n确定还原？")) return;
         try { localStorage.removeItem(V_KEY); } catch (e) {}
+        try { localStorage.removeItem(LS_OLD); } catch (e) {}
         clearLocalFirst();
         clearKeys();
         location.reload();
