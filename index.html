@@ -418,6 +418,15 @@
   .lk-remember{display:flex; align-items:center; gap:7px; margin:4px 0 16px;
                font-size:12.5px; color:var(--ink2); cursor:pointer; justify-content:center;}
   .lk-remember input{width:15px; height:15px; accent-color:#8a5cff; cursor:pointer;}
+  .lk-users{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:0 0 14px;}
+  .lk-user{border:1px solid var(--line); background:var(--chip); color:var(--ink2);
+           padding:7px 13px; border-radius:999px; cursor:pointer; font-size:13px;
+           transition:transform .15s ease, color .15s ease, box-shadow .15s ease;}
+  .lk-user .em{margin-right:5px;}
+  .lk-user:hover{transform:translateY(-1px); color:var(--ink);}
+  .lk-user.on{color:#fff; border-color:transparent; font-weight:600;
+              background:linear-gradient(135deg,#8a5cff,#5b8cff);
+              box-shadow:0 8px 18px rgba(110,100,255,.35);}
   .lk-btn{width:100%; border:none; border-radius:12px; padding:12px 0; cursor:pointer;
           font-size:15px; font-weight:700; color:#fff; letter-spacing:1px;
           background:linear-gradient(135deg,#ff6a88,#8a5cff);
@@ -439,6 +448,34 @@
                 border-radius:10px; font-size:14px; outline:none; background:var(--field-bg); color:var(--field-ink);}
   .cp-row input:focus{border-color:#a78bfa;}
 
+  /* ============== 后台收纳重构：折叠分区 ============== */
+  .adm-head{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .adm-head b{font-size:17px; flex:0 0 auto;}
+  .who-chip{margin-left:auto; background:#efe8ff; color:#6a4fd8; padding:4px 11px;
+            border-radius:999px; font-size:12px; font-weight:600; flex:0 0 auto;
+            box-shadow:inset 0 0 0 1px rgba(122,88,255,.12);}
+  .adm-note{margin-top:2px;}
+  .acc{flex:0 0 auto; margin-bottom:10px;}
+  .acc-open{flex:1 1 auto; display:flex; flex-direction:column; min-height:0; margin-bottom:0;}
+  .acc-hd{width:100%; display:flex; align-items:center; gap:8px; border:none; cursor:pointer;
+          background:#f6f3fe; border-radius:11px; padding:10px 13px;
+          font-size:13.5px; font-weight:700; color:#6a4fd8; text-align:left;
+          transition:background .15s ease;}
+  .acc-hd:hover{background:#efebfc;}
+  .acc-hd .hd-arrow{margin-left:auto; font-size:10px; color:#a99acb; transition:transform .2s ease;}
+  .fold .hd-arrow{transform:rotate(-90deg);}
+  .fold .acc-bd{display:none;}
+  .acc-bd{overflow:hidden; padding-top:10px;}
+  .acc-open .acc-bd{flex:1 1 auto; min-height:120px; display:flex; flex-direction:column; padding-top:10px;}
+  .acc-open .acc-bd #fEntries{flex:1 1 auto; min-height:0;}
+  .acc-note{margin:6px 2px 4px; font-size:12px; line-height:1.6; color:#a89cc4;
+            background:#fbfaff; border:1px dashed #ece6f9; border-radius:10px; padding:8px 10px;}
+  #fEntries{overflow-y:auto; overflow-x:hidden; padding:2px 6px 10px 0;}
+  #fEntries::-webkit-scrollbar{width:8px;}
+  #fEntries::-webkit-scrollbar-thumb{background:#e3daf5; border-radius:8px;}
+  #fEntries::-webkit-scrollbar-thumb:hover{background:#cbbcf0;}
+  #fEntries::-webkit-scrollbar-track{background:transparent;}
+
   @media (max-width:600px){
     .gear{right:12px; bottom:12px; width:46px; height:46px;}
     .adm{width:100vw; box-shadow:none;}
@@ -453,26 +490,43 @@
   <div class="blob b3"></div>
 
   <!-- ============== 兜底数据（已加密，供首次/离线使用） ==============
-       说明：此处的站点数据已经用口令加密成密文（SITE_VAULT），源码里看不到明文。
+       说明：此处的站点数据已经用口令加密成密文（SITE_DOC，v3 多成员文档），源码里看不到明文。
        页面打开时先出现锁屏页，必须输入正确口令才能解密看到内容。
        · 首次部署：把 index.html 与 config.json 一起上传（config.json 也是密文），
-         锁屏输入同一口令即可。config.json 里的密文会覆盖下面的兜底数据。
-       · 修改数据/口令：进后台（解锁后右下角齿轮）操作，改完用
-         「下载 config.json」/「复制新配置」替换仓库里的 config.json。
-       · 兜底数据默认口令是 admin888，仅用于还没有上传 config.json 的时候，
-         正式使用请进后台「修改口令」换成自己的。
+         锁屏「选成员 + 输入对应口令」即可。config.json 的成员会覆盖下面的兜底数据。
+       · 修改数据/口令：进后台（解锁后右下角齿轮）操作；添加成员在后台「＋ 添加成员」，
+         每次改完都用「下载 config.json」/「复制新配置」替换仓库里的 config.json。
+       · 兜底内置示例（仅用于还没有上传 config.json 的时候）：
+         成员「主人」口令 admin888、成员「小号」口令 123456。
+         正式使用请先「添加成员/修改口令」换成自己的。
        · 口令即钥匙：加密用的是 PBKDF2 + AES-256-GCM，口令不落盘。
-         忘记口令 = 数据无法恢复，请务必妥善保管，并在后台定期「导出明文备份」。
+         一人一口令一空间，成员之间互不可见；忘记口令 = 数据无法恢复，
+         请务必妥善保管，并在后台定期「导出明文备份」。
   ======================================================================== -->
   <script>
-    const SITE_VAULT = {
-      "v": 2,
+    const SITE_DOC = {
+      "v": 3,
       "siteName": "lucks",
-      "enc": {
-        "salt": "g9IPQw/COXzHXpQGbJDJcA==",
-        "iv": "9Hm5qMPxvc80JUKM",
-        "data": "sOXAvjjvpzCoozfn1AdRHuKRDkkAGqLP4RHIeLwJ+cvCb+08xiXK7R/Bmm+sab5gZEgBuQMASHY5Axp13S6biiLKIToIudPmXXGh5pNHyjvTt3rrt/kvrhghJq8/iueIb1qyDm5UDSb+J0ysOUg3CbDBBBweIdG0DuSapLlAqQ+EKUDnngm0SAeO0gZlfI+MjKLHQKlr3piJJcEMCCk3Fu//VNMBfn5irh4R7XU+VLPq5Nfb+slKcea+dY6EMshqH337cHrAIWen+Tset5Vx5NCp8+CmRI9iZP7zsyKMYfVMTRWLHQHz9rfQpR4kicKQWItgLstjX5bIk9CNDqCng8c0ZJIfVWL8Yolfx6b9/gdQQStU/c5qbMRV4f5dbKUj2/cgDnSApF/xcdII9Xnm2vo6NjjTM4nlUV+nBnlzU1XCZVgw0FcOVBttDRef34/tVdqud2YDckExMhtChMLslcAzUB15cSAxFEsml3b40njgvLcsdeJU5zp5XJ4PfQJLc7zhgpyQWnmNYPmujANEGrOtW1ArZWfj0LQDR61tw8Ps3gt/Ew+Qh40qHcFlmA6DuWjnHIQBYRR5Cio6Atnk/GX2hVJblog7ukjFNCEKgLPGqfIhD+ncJ49zOWhrYXTYb+IBP1A2Gt3Rfzw1CjN6X9x/QCjQQnL8Oj4JyulOo+LTGt0G0zXMvHZbvP+7Bo2Z0kpFTOv0mq4CIOJjrwlJ8dshoKSFaHTbwkH0YLHtdT5/JNBIMBLGlQEz85v9VpaNZI/YGEUhVwNTfua2ELjavgKeT9y+NOTmyZHfG+wCM2y0X/UK1SLbyYNlQMsIM9qDthfQbhhL+KMToxSdLltKeVvRZvzenq5a2CvxTHpLmNG9zz4dCWsO1EDXlQLGJeHBLR2x40a67g92dsm/vBU2u1XyTlkw1Fv8M1Fy92XfKdeHjKQrHnsDWEDJap51B1f+VYrv0eAeimTnAsXLHxvlc5GBIj3MOffQgVrYeC05nQccGLzC73BVTJTirpOQKJP2FmYfonR61TRFH239Ex60JEQG8aMp8UIjIOKg8jm2//anA275RVgPmzKfFXWdtrGdk6mQ81b9MrtTpwFlc1KDaRXgI7BUA/Yc/Meum61qUjUz+OVks17S"
-      }
+      "users": [
+        {
+          "name": "主人",
+          "emoji": "👤",
+          "enc": {
+            "salt": "rLwHgwudbLrM8EZzKYqyUQ==",
+            "iv": "lFoCfhKwZ78G4O2l",
+            "data": "OigrFUhncaVabIlPLFMSJts08agpaqvcOo9jawDcXlGCpIYBawjWBdf/N96ZxOFKUWuoMwHlk1HXigWS/IpWDYl0gRD2FqzZiZ3htUepozQ8t768C9Ks5h0dA7VEdbMZxlD0uUSt24m9m64lBA6vvjmb3OyqAQMJjs3+Abvw3oOVFH8E5JdJQG6KL/iYR+x4UA5ORvYnktGMHMzGEY3MysxaL2oLa2gd3AZN7wTXLBra+rPS0jMj3MLvmIsyYxWyo2NmpQaMURS8pYCz9/u/6xuNiCIhhXzcPvXlip9PBmsbluHtAUdzI+4AnBNMj+e/waUEJKbmvCdjGhpM5ANyYJMFoo5kvGoHYofs8Gando8fl2Hbms8zRgWaAlfLkco9ssW2jGS9dD1L7jdphOyxIuggjuZHtDS/nyee927c7sDZFUBMXGALbd2A1Lj23xjTZ3fa3Hu4PVBipGh678zUNJOlvxpja0OE9HbW+13Dw9R96hyqyCUQvogbYFga5maiMduYotWe39cHzdZ7r4It8Ph55HkyEad9Z9sOQT0pwPGy+yedtUpdzMqJCHLHJd6fEr6cLu2yXBx62OxXULQdm39DOpTorbgW3/EmF4PMjTZpJprUCs9wWQ2M8LP8dU2KyEOHzGCbFXhetkub/uazXrSyEdTRzL1cQqcx4wxfkjkVD9aaNGi/R6v6zt2v5HVa7ZY1uNBgIjTPcSUdrY2LEJ6OTIhUdfB1kegMEsO06Q=="
+          }
+        },
+        {
+          "name": "小号",
+          "emoji": "🎮",
+          "enc": {
+            "salt": "nbwayO+yaexcSTiE/NngMQ==",
+            "iv": "kliDTjOMy7mrnY+4",
+            "data": "3tFrqXbzvwKNgVkh/93sdmP1hRPHulMgB1NIQq6j7pl9cRGzyjVgu+8dblOUMGkqsdGEp/VGW6o6QlgmMnb80RMoLMJpuhmwM7wsVc5AKX7sLPJ+pEZscqM/0neVsJMRHtvqtXjoyD2eJodM3gSJHzLavADhRZQ428XFpRqhTegpuvYux/ro+yw+KnESYdB6+di5OHNnzjz+cWtqyBYEIsBniMh6OF0RyrAvTUgKuEBepJyTHBgyqtxQNflgJllB6a7+suo4uF/y8g6w6wOugQkPSQU1JYnoZA4AwBDufeFrEaQy3DzYWCVYRtE6CI8nhL4RZnD403gwjwyKqYZ25bxE8b2Ux/4sYsIBMJuWHfLgQ7iaQlj6L66JUwEphwvkx5dzP+CveuvXhWNRpt2fDtRW/0saoKAGt875/a/IL5QJyD6i6025fZTFSz5VcLbbOLCBtd+e5mgydDg7PiKXFhW+9HTZitgNYYQEdbLD+iA2ocxzPTKzOM2WUwtmbd4EwB3rdaA4bvYD"
+          }
+        }
+      ]
     };
   </script>
   <!-- ==================== 兜底数据区结束（下面不用动） ==================== -->
@@ -517,9 +571,9 @@
 
   <script>
     (function () {
-      /* ================== 加密数据层：口令即钥匙 ================== */
+      /* ================== 加密数据层：多成员 × 一人一口令 ================== */
       var LS_OLD = "lucks_home_cfg_v1";    // 旧版明文缓存（仅供迁移检测，解锁后即删除）
-      var V_KEY  = "lucks_home_vault_v2";  // 本机密文库（与 config.json 同格式）
+      var V_KEY  = "lucks_home_doc_v3";    // 本机密文库（与 config.json 同格式 v3：users 数组）
       var KS_SES = "lucks_home_key_ses";   // 会话钥匙(sessionStorage：关浏览器即忘)
       var KS_MEM = "lucks_home_key_mem";   // “记住此设备”钥匙(localStorage)
 
@@ -529,12 +583,17 @@
       var unlocked    = false;    // 是否已解密进入
       var ATT         = 0;        // 输错次数
       var cfgSrc      = "embedded"; // remote / local / embedded / migrated
-      var needPublish = false;    // 本机已是最新加密数据，但仓库 config.json 还没替换
+      var needPublish = false;    // 本机已有改动，但仓库 config.json 还没替换
       var curKey      = null;     // 当前会话 AES-GCM 密钥
       var curRawB64   = null;     // 该密钥 raw(base64)：用于“记住此设备/会话”
-      var activeSalt  = null;     // 当前密文库的 salt（保存/改口令时沿用，保证旧口令可解）
+      var activeSalt  = null;     // 当前成员的密文库 salt（保存/改口令时沿用）
 
-      var remoteVault = null, localVault = null, legacyRemote = null, legacyLocal = null;
+      // —— 多成员状态 ——
+      var remoteDoc = null, localDoc = null, legacyRemote = null, legacyLocal = null;
+      var activeDoc = null;   // 当前登录所依据的整份文档(含 users)
+      var uid = -1;           // 当前登录成员在 activeDoc.users 的下标
+      var lockDoc = null;     // 锁屏展示用的文档
+      var lockUid = 0;        // 锁屏当前选中的成员下标
 
       function norm(e) {
         e = e || {};
@@ -605,10 +664,17 @@
           key, b64ToU8(vault.enc.data)
         ).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); });
       }
-      function decryptVaultWithPwd(vault, pwd) {
-        return deriveKey(pwd, b64ToU8(vault.enc.salt)).then(function (k) { return decryptBytes(vault, k); });
+      function decryptEncBytes(enc, key) {   // enc = {salt,iv,data}
+        return crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: b64ToU8(enc.iv) }, key, b64ToU8(enc.data)
+        ).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); });
       }
-      function makeVault(obj, pwd) {   // 全新盐值加密（首次/改口令/迁移）
+      function decryptVaultWithPwd(member, pwd) {  // member = {name,emoji,enc}
+        var e = member.enc;
+        return deriveKey(pwd, b64ToU8(e.salt)).then(function (k) { return decryptEncBytes(e, k); });
+      }
+      function decryptMemberKey(member, key) { return decryptEncBytes(member.enc, key); }
+      function makeVault(obj, pwd) {   // 全新盐值加密，返回某成员的 enc（首次/改口令/新增成员）
         var salt = rnd(16);
         return deriveKey(pwd, salt).then(function (k) {
           var iv = rnd(12);
@@ -616,67 +682,74 @@
             { name: "AES-GCM", iv: iv }, k,
             new TextEncoder().encode(JSON.stringify(obj))
           ).then(function (ct) {
-            return { v: 2, siteName: obj.siteName || "", enc: { salt: u8ToB64(salt), iv: u8ToB64(iv), data: abToB64(ct) } };
+            return { salt: u8ToB64(salt), iv: u8ToB64(iv), data: abToB64(ct) };
           });
         });
       }
-      function reVaultWithCurrentKey(obj) {  // 沿用 activeSalt，用会话密钥重新加密
+      function reVaultWithCurrentKey(obj) {  // 沿用 activeSalt + 会话密钥，返回某成员的 enc
         if (!curKey) return Promise.reject(new Error("no-key"));
         var iv = rnd(12);
         return crypto.subtle.encrypt(
           { name: "AES-GCM", iv: iv }, curKey,
           new TextEncoder().encode(JSON.stringify(obj))
         ).then(function (ct) {
-          return { v: 2, siteName: obj.siteName || "",
-                   enc: { salt: u8ToB64(activeSalt), iv: u8ToB64(iv), data: abToB64(ct) } };
+          return { salt: u8ToB64(activeSalt), iv: u8ToB64(iv), data: abToB64(ct) };
         });
       }
 
-      /* ---------- 数据源读取 ---------- */
+      /* ---------- 数据源读取（整文档 = {v:3, siteName, users[]}） ---------- */
+      function toDoc(o) {
+        if (!o || typeof o !== "object") return null;
+        if (o.v === 3 && Array.isArray(o.users) && o.users.length) return o;
+        if (o.v === 2 && o.enc) {   // 兼容旧单用户密文 → 转为主人一人
+          return { v: 3, siteName: o.siteName || "", users: [{ name: "主人", emoji: "👤", enc: o.enc }] };
+        }
+        return null;
+      }
+      function docToLocal(doc) {
+        try { localStorage.setItem(V_KEY, JSON.stringify(doc)); } catch (e) {}
+      }
       function loadLocalState() {
         try {
           var r = localStorage.getItem(V_KEY);
-          if (r) { var o = JSON.parse(r); if (o && o.enc) localVault = o; }
+          if (r) { var o = JSON.parse(r); var d = toDoc(o); if (d) localDoc = d; }
         } catch (e) {}
         try {
           var r2 = localStorage.getItem(LS_OLD);
-          if (r2) { var o2 = JSON.parse(r2); if (o2 && typeof o2 === "object") legacyLocal = o2; }
+          if (r2) { var o2 = JSON.parse(r2); if (o2 && typeof o2 === "object" && Array.isArray(o2.entries)) legacyLocal = o2; }
         } catch (e) {}
       }
       function classifyRemote(o) {
         if (!o || typeof o !== "object") return;
-        if (o.v === 2 && o.enc) remoteVault = o;
+        var d = toDoc(o);
+        if (d) remoteDoc = d;
         else if (Array.isArray(o.entries)) legacyRemote = o;
       }
-      function vaultSources() {
+      function docSources() {   // remote → local → embedded（内置兜底）
         var arr = [];
-        if (remoteVault)  arr.push({ v: remoteVault, s: "remote" });
-        if (localVault)   arr.push({ v: localVault,  s: "local" });
-        if (typeof SITE_VAULT !== "undefined" && SITE_VAULT && SITE_VAULT.enc) arr.push({ v: SITE_VAULT, s: "embedded" });
+        if (remoteDoc) arr.push({ d: remoteDoc, s: "remote" });
+        if (localDoc)  arr.push({ d: localDoc,  s: "local" });
+        if (typeof SITE_DOC !== "undefined" && SITE_DOC && Array.isArray(SITE_DOC.users)) arr.push({ d: SITE_DOC, s: "embedded" });
         return arr;
+      }
+      function lockDocPick() {   // 锁屏用哪份文档（remote>local>embedded）
+        if (!remoteDoc && !localDoc && hasLegacy()) {   // 有旧明文但还没任何密文 → 走迁移，跳过内置示例
+          lockDoc = null;
+          return null;
+        }
+        var list = docSources();
+        lockDoc = list.length ? list[0].d : null;
+        if (lockDoc && lockUid >= lockDoc.users.length) lockUid = 0;
+        return lockDoc;
       }
       function hasLegacy() { return !!legacyRemote || !!legacyLocal; }
       function legacyData() { return legacyRemote || legacyLocal || null; }
 
-      /* ---------- 进入流程 ---------- */
-      function rememberKey(remember) {
-        if (!curRawB64) return;
-        try { sessionStorage.setItem(KS_SES, curRawB64); } catch (e) {}
-        try { if (remember) localStorage.setItem(KS_MEM, curRawB64); else localStorage.removeItem(KS_MEM); } catch (e) {}
-      }
-      function bootWith(obj, src, opts) {
-        opts = opts || {};
-        assignCur(obj);
-        unlocked = true; cfgSrc = src;
-        needPublish = !!opts.needPublish;
-        if (opts.cacheVault) { try { localStorage.setItem(V_KEY, JSON.stringify(opts.cacheVault)); } catch (e) {} }
-        try { localStorage.removeItem(LS_OLD); } catch (e) {}
-        document.body.classList.remove("locked");
-        var lk = $id("locker"); if (lk) lk.parentNode.removeChild(lk);
-        var g = $id("gear"); if (g) g.style.display = "";
-        render();
-        refreshUI();
-        updateNote();
+      /* ---------- 进入流程（多成员：一人一口令一空间） ---------- */
+      function storeAuth(remember, u, raw) {
+        var o = { u: u, k: raw };
+        try { sessionStorage.setItem(KS_SES, JSON.stringify(o)); } catch (e) {}
+        try { if (remember) localStorage.setItem(KS_MEM, JSON.stringify(o)); else localStorage.removeItem(KS_MEM); } catch (e) {}
       }
       function clearKeys() {
         curRawB64 = null; curKey = null; activeSalt = null;
@@ -688,61 +761,84 @@
         var inp = $id("lkPwd"), err = $id("lkErr"), card = document.querySelector(".lk-card");
         if (inp) { inp.value = ""; inp.focus(); }
         if (card) { card.classList.remove("lk-shake"); void card.offsetWidth; card.classList.add("lk-shake"); }
-        if (err) err.textContent = (ATT > 1 && ATT % 3 === 0) ? "口令不对，次数多了会锁一下试试水" : "口令不对，请重试";
+        if (err) err.textContent = "口令不对，请重试";
+      }
+      function srcOfDoc(d) {
+        if (d === remoteDoc) return "remote";
+        if (d === localDoc)  return "local";
+        return "embedded";
+      }
+      function bootWith(userCfg, doc, u, src, opts) {
+        opts = opts || {};
+        var site = (doc && doc.siteName) ? String(doc.siteName) : (userCfg.siteName || "");
+        var o = normalizeCfg(userCfg); o.siteName = site;
+        assignCur(o);
+        unlocked = true; cfgSrc = src; uid = u; activeDoc = doc;
+        needPublish = !!opts.needPublish;
+        if (opts.cacheLocal && doc) docToLocal(doc);
+        try { localStorage.removeItem(LS_OLD); } catch (e) {}
+        document.body.classList.remove("locked");
+        var lk = $id("locker"); if (lk) lk.parentNode.removeChild(lk);
+        var g = $id("gear"); if (g) g.style.display = "";
+        render();
+        refreshUI();
+        updateNote();
+      }
+      function establishSession(member, pwd, remember) {   // 生成会话钥匙并记住
+        var e = member.enc;
+        activeSalt = b64ToU8(e.salt);
+        return deriveKey(pwd, activeSalt).then(function (k) {
+          curKey = k;
+          return rawOf(k).then(function (r) { curRawB64 = r; storeAuth(remember, lockUid, r); });
+        });
       }
       function doUnlock(pwd) {
         var errEl = $id("lkErr"); if (errEl) errEl.textContent = "";
         if (!pwd) { unlockFailed(); return; }
-        // 迁移模式：线上/本机都没有密文库、但存在旧版明文 → 先加密再进入
-        if (!remoteVault && !localVault && hasLegacy()) {
+        lockDocPick();
+        // 迁移模式：没有任何密文文档、但存在旧版明文 → 加密成一个新成员
+        if (!lockDoc && hasLegacy()) {
           var obj = normalizeCfg(legacyData());
-          var lkBtn = $id("lkGo"); if (lkBtn) lkBtn.disabled = true;
-          makeVault(obj, pwd).then(function (vault) {
-            activeSalt = b64ToU8(vault.enc.salt);
-            curKey = null; curRawB64 = null;
-            deriveKey(pwd, activeSalt).then(function (k) {
-              curKey = k;
-              return rawOf(k).then(function (b) { curRawB64 = b; rememberKey($id("lkRemember").checked); });
-            }).then(function () {
-              bootWith(obj, "migrated", { needPublish: true, cacheVault: vault });
+          var lb = $id("lkGo"); if (lb) lb.disabled = true;
+          makeVault(obj, pwd).then(function (enc) {
+            var ndoc = { v: 3, siteName: obj.siteName || "我的主页", users: [{ name: "我", emoji: "👤", enc: enc }] };
+            lockDoc = ndoc; lockUid = 0;
+            return establishSession(ndoc.users[0], pwd, $id("lkRemember").checked).then(function () {
+              docToLocal(ndoc);
+              bootWith(obj, ndoc, 0, "migrated", { needPublish: true });
             });
-          }).catch(function () { if (errEl) errEl.textContent = "加密失败，请重试"; if (lkBtn) lkBtn.disabled = false; });
+          }).catch(function () { if (errEl) errEl.textContent = "加密失败，请重试"; if (lb) lb.disabled = false; });
           return;
         }
-        // 常规解锁：依次尝试 remote → local → embedded
-        var list = vaultSources(), i = 0;
-        function next() {
-          if (i >= list.length) { unlockFailed(); return; }
-          var it = list[i++];
-          decryptVaultWithPwd(it.v, pwd).then(function (obj) {
-            activeSalt = b64ToU8(it.v.enc.salt);
-            deriveKey(pwd, activeSalt).then(function (k) {
-              curKey = k;
-              return rawOf(k).then(function (b) { curRawB64 = b; rememberKey($id("lkRemember").checked); });
-            }).then(function () {
-              var cache = (it.s === "embedded") ? null : it.v;
-              bootWith(obj, it.s, { cacheVault: cache });
+        if (!lockDoc || !lockDoc.users.length) { if (errEl) errEl.textContent = "没有可用数据，请先放置 config.json"; return; }
+        var member = lockDoc.users[lockUid];
+        var go = $id("lkGo"); if (go) go.disabled = true;
+        decryptVaultWithPwd(member, pwd)
+          .then(function (userCfg) {
+            return establishSession(member, pwd, $id("lkRemember").checked).then(function () {
+              var isEmb = (lockDoc === SITE_DOC);
+              bootWith(userCfg, lockDoc, lockUid, srcOfDoc(lockDoc), { cacheLocal: !isEmb });
             });
-          }).catch(next);
-        }
-        next();
+          })
+          .catch(function () { unlockFailed(); if (go) go.disabled = false; });
       }
 
-      /* ---------- 锁屏页与启动（插入锁屏，等待用户输入口令解密） ---------- */
+      /* ---------- 锁屏页与启动（选成员 + 输入口令） ---------- */
       document.body.insertAdjacentHTML("beforeend",
         '<div class="locker" id="locker">' +
           '<div class="lk-deco lk-d1"></div><div class="lk-deco lk-d2"></div>' +
           '<div class="lk-card">' +
             '<div class="lk-lock">🔒</div>' +
             '<h2 id="lkTitle">内容已加密</h2>' +
-            '<p class="lk-sub" id="lkSub">输入访问口令解锁</p>' +
+            '<p class="lk-sub" id="lkSub"></p>' +
+            '<div class="lk-users" id="lkMembers" style="display:none"></div>' +
             '<div class="lk-input">' +
               '<input type="password" id="lkPwd" placeholder="访问口令" autocomplete="current-password">' +
               '<button type="button" class="lk-eye" id="lkEye" title="显示/隐藏">👁</button>' +
             '</div>' +
             '<div class="lk-err" id="lkErr"></div>' +
             '<label class="lk-remember"><input type="checkbox" id="lkRemember" checked> 记住此设备，下次自动进入</label>' +
-            '<button type="button" class="lk-btn" id="lkGo">进入主页</button>' +
+            '<button type="button" class="lk-btn" id="lkGo">进入空间</button>' +
             '<p class="lk-tip" id="lkTip"></p>' +
           '</div>' +
         '</div>'
@@ -751,7 +847,7 @@
       var lockReady = false;
       var readyList = [];
       function onReady(fn) { if (lockReady) fn(); else readyList.push(fn); }
-      function setReady() { if (lockReady) return; lockReady = true; readyList.forEach(function (f) { f(); }); readyList = []; updateLockTip(); }
+      function setReady() { if (lockReady) return; lockReady = true; readyList.forEach(function (f) { f(); }); readyList = []; renderLockUI(); }
       function fetchConfigSoon() {
         if (typeof fetch !== "function") { setReady(); return; }
         fetch("config.json", { cache: "no-store" })
@@ -759,21 +855,55 @@
           .then(function (o) { classifyRemote(o); setReady(); })
           .catch(function () { setReady(); });
       }
+      function renderLockUI() {
+        lockDocPick();
+        var t = $id("lkTitle"), sub = $id("lkSub"), wrap = $id("lkMembers");
+        if (!lockDoc) {
+          if (t) t.textContent = hasLegacy() ? "旧数据待加密迁移" : "创建加密空间";
+          if (sub) sub.textContent = hasLegacy() ? "输入一个口令，作为你的第一位成员" : "上传 config.json 或输入口令开始使用";
+          if (wrap) wrap.style.display = "none";
+          updateLockTip();
+          return;
+        }
+        if (t) t.textContent = (lockDoc.siteName || "主页") + " · 内容已加密";
+        var m = lockDoc.users[lockUid] || lockDoc.users[0];
+        if (lockDoc.users.length > 1) {
+          wrap.style.display = "flex";
+          wrap.innerHTML = "";
+          lockDoc.users.forEach(function (u, i) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className = "lk-user" + (i === lockUid ? " on" : "");
+            b.innerHTML = '<span class="em">' + (u.emoji || "👤") + '</span>' + (u.name || "成员");
+            b.addEventListener("click", function () {
+              lockUid = i;
+              var err = $id("lkErr"); if (err) err.textContent = "";
+              renderLockUI();
+              setTimeout(function () { $id("lkPwd").focus(); }, 30);
+            });
+            wrap.appendChild(b);
+          });
+          if (sub) sub.textContent = "选择身份，输入对应口令";
+        } else {
+          wrap.style.display = "none";
+          if (sub) sub.textContent = (m.emoji || "") + " " + (m.name || "成员") + " 的空间 · 输入口令解锁";
+        }
+        updateLockTip();
+      }
       function updateLockTip() {
         var tip = $id("lkTip"); if (!tip) return;
-        var has2 = !!(remoteVault || localVault);
-        if (!remoteVault && !localVault && hasLegacy()) {
-          tip.innerHTML = "检测到<b>旧版明文配置</b>：输入一个口令后会自动加密，此后内容不再外泄。进入后请用后台「下载 config.json」替换仓库旧文件。";
+        if (!lockDoc && hasLegacy()) {
+          tip.innerHTML = "检测到<b>旧版明文配置</b>：输入一个口令会自动加密并成为你的第一个成员。进入后请用「下载 config.json」替换仓库旧文件。";
           tip.className = "lk-tip";
-        } else if (has2 && hasLegacy()) {
-          tip.innerHTML = "提示：检测到仓库仍是<b>旧版明文 config.json</b>，进入后请用「下载 config.json」替换，否则他人可直接读到数据。";
+        } else if (lockDoc && hasLegacy()) {
+          tip.innerHTML = "提示：仓库仍是<b>旧版明文 config.json</b>，进入后请用「下载 config.json」替换，否则他人可直接读到数据。";
           tip.className = "lk-tip";
-        } else if (has2) {
-          tip.innerHTML = "口令即钥匙，输入正确口令即可解密内容；可勾选“记住此设备”免密进入。";
+        } else if (lockDoc === SITE_DOC && !remoteDoc && !localDoc) {
+          tip.innerHTML = "内置示例成员：主人(口令 admin888)、小号(口令 123456)。正式使用请在后台添加自己的成员。";
+          tip.className = "lk-tip";
+        } else if (lockDoc) {
+          tip.innerHTML = "一人一口令、各自独立互不可见；勾选“记住此设备”可免密进入。";
           tip.className = "lk-tip ok";
-        } else {
-          tip.innerHTML = "提示：当前为内置示例，口令 <b>admin888</b>。正式使用请进后台修改数据与口令。";
-          tip.className = "lk-tip";
         }
       }
       function initLock() {
@@ -786,8 +916,7 @@
         var pwd = $id("lkPwd"), btn = $id("lkGo"), eye = $id("lkEye");
         btn.disabled = true;
         fetchConfigSoon();
-        // 兜底：网络再慢也不超过 1.4 秒后开放输入
-        setTimeout(function () { setReady(); }, 1400);
+        setTimeout(function () { setReady(); }, 1400);   // 兜底：数据源最迟 1.4 秒就绪
         function submit() { doUnlock(pwd.value); }
         btn.addEventListener("click", submit);
         pwd.addEventListener("keydown", function (ev) { if (ev.key === "Enter") submit(); });
@@ -798,28 +927,31 @@
         });
         onReady(function () {
           btn.disabled = false;
+          renderLockUI();
           tryAuto();
         });
         updateLockTip();
         setTimeout(function () { pwd.focus(); }, 120);
       }
-      function tryAuto() {   // “记住此设备/会话”钥匙存在时尝试直接进入
+      function tryAuto() {   // 记忆了 {u,k} → 自动进入对应成员
         if (unlocked) return;
-        var b = null;
-        try { b = sessionStorage.getItem(KS_SES) || localStorage.getItem(KS_MEM); } catch (e) {}
-        if (!b) return;
-        importRawKey(b).then(function (k) {
-          var list = vaultSources(), i = 0;
-          function nxt() {
-            if (i >= list.length) { clearKeys(); return; }
-            var it = list[i++];
-            decryptBytes(it.v, k).then(function (obj) {
-              activeSalt = b64ToU8(it.v.enc.salt);
-              curKey = k; curRawB64 = b;
-              bootWith(obj, it.s, { cacheVault: (it.s === "embedded") ? null : it.v });
-            }).catch(nxt);
-          }
-          nxt();
+        var raw = null;
+        try {
+          var s = sessionStorage.getItem(KS_SES) || localStorage.getItem(KS_MEM);
+          if (s) { raw = JSON.parse(s); }
+        } catch (e) {}
+        if (!raw || typeof raw.u !== "number" || !raw.k) return;
+        lockDocPick();
+        if (!lockDoc) return;
+        var member = lockDoc.users[raw.u];
+        if (!member) { clearKeys(); return; }
+        importRawKey(raw.k).then(function (k) {
+          decryptMemberKey(member, k).then(function (cfg) {
+            activeSalt = b64ToU8(member.enc.salt);
+            curKey = k; curRawB64 = raw.k;
+            var isEmb = (lockDoc === SITE_DOC);
+            bootWith(cfg, lockDoc, raw.u, srcOfDoc(lockDoc), { cacheLocal: !isEmb });
+          }).catch(function () { clearKeys(); });
         }).catch(function () { clearKeys(); });
       }
 
@@ -1177,20 +1309,23 @@
       }
       refreshUI();
 
-      /* ---- 线上 config.json 已在"上锁流程"里读取；这里仅窗口重新聚焦时增量检查 ---- */
+      /* ---- 线上 config.json 已在“上锁流程”里读取；这里仅窗口重新聚焦时增量检查 ---- */
       function pollRemote() {
         if (!unlocked || typeof fetch !== "function") return;
         if (admWrap.classList.contains("on")) return;      // 后台编辑中不打断
         fetch("config.json", { cache: "no-store" })
           .then(function (r) { if (!r.ok) throw new Error("nf"); return r.json(); })
           .then(function (o) {
-            if (!o || !o.enc) return;
-            var isSame = remoteVault && remoteVault.enc && remoteVault.enc.data === o.enc.data;
-            if (isSame) return;
-            decryptBytes(o, curKey).then(function (obj) {
-              remoteVault = o; activeSalt = b64ToU8(o.enc.salt);
-              try { localStorage.setItem(V_KEY, JSON.stringify(o)); } catch (e) {}
-              assignCur(obj); needPublish = false; cfgSrc = "remote";
+            var d = toDoc(o);
+            if (!d || !d.users[uid]) return;
+            var curE = (remoteDoc && remoteDoc.users[uid] && remoteDoc.users[uid].enc) || null;
+            if (curE && curE.data === d.users[uid].enc.data) return;   // 没变
+            decryptMemberKey(d.users[uid], curKey).then(function (cfg) {
+              remoteDoc = d; activeDoc = d; activeSalt = b64ToU8(d.users[uid].enc.salt);
+              docToLocal(d);
+              var o2 = normalizeCfg(cfg); o2.siteName = d.siteName || "";
+              assignCur(o2);
+              needPublish = false; cfgSrc = "remote";
               render(); refreshUI(); updateNote();
               toast("已自动更新到线上最新内容");
             }).catch(function () { /* 口令已变，忽略自动刷新，请手动处理 */ });
@@ -1205,27 +1340,40 @@
       document.body.insertAdjacentHTML("beforeend",
         '<div class="adm-wrap" id="admWrap">' +
           '<div class="adm">' +
-            '<div class="adm-head"><b>管理后台</b><button type="button" class="adm-x" id="admX">✕</button></div>' +
-            '<p class="adm-tip">改动会即时刷新页面预览。下方提示会告诉你当前数据来自哪里、如何发布到线上。</p>' +
+            '<div class="adm-head"><b>⚙ 管理后台</b><span class="who-chip" id="whoChip"></span><button type="button" class="adm-x" id="admX">✕</button></div>' +
             '<div class="adm-note" id="cfgNote"></div>' +
-            '<div class="adm-sec">站点设置</div>' +
-            '<div class="adm-row"><label>大标题</label><input id="fSite"></div>' +
-            '<div class="adm-row"><label>副标题</label><input id="fSlog"></div>' +
-            '<div class="adm-row"><label>底部文字</label><input id="fFoot"></div>' +
-            '<div class="adm-row"><label>分类标签</label><input id="fCats" placeholder="逗号分隔，如：实用,学习,工具（首页顶部分类）"></div>' +
-            '<div class="adm-sec">安全（访问口令即解密钥匙）</div>' +
-            '<div class="adm-row"><label>口令</label><button type="button" id="bChPwd">🔑 修改口令</button><button type="button" id="bBackup">⬇ 导出明文备份</button><button type="button" id="bLock">🚪 退出登录</button></div>' +
-            '<div class="adm-sec">入口列表</div>' +
-            '<div class="adm-search"><input id="fSearch" type="search" placeholder="搜索：标题 / 描述 / 链接 / 图标（可留空显示全部）"><span id="fCount"></span></div>' +
-            '<div id="fEntries"></div>' +
-            '<datalist id="catOpts"></datalist>' +
+            '<div class="acc fold">' +
+              '<button type="button" class="acc-hd"><span>🛠 站点设置</span><span class="hd-arrow">▾</span></button>' +
+              '<div class="acc-bd">' +
+                '<div class="adm-row"><label>大标题</label><input id="fSite"></div>' +
+                '<div class="adm-row"><label>副标题</label><input id="fSlog"></div>' +
+                '<div class="adm-row"><label>底部文字</label><input id="fFoot"></div>' +
+                '<div class="adm-row"><label>分类标签</label><input id="fCats" placeholder="逗号分隔，如：实用,学习,工具（首页顶部分类）"></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="acc acc-open">' +
+              '<button type="button" class="acc-hd"><span>� 入口列表</span><span class="hd-arrow">▾</span></button>' +
+              '<div class="acc-bd">' +
+                '<div class="adm-search"><input id="fSearch" type="search" placeholder="搜索：标题 / 描述 / 链接 / 图标"><span id="fCount"></span></div>' +
+                '<div id="fEntries"></div>' +
+                '<datalist id="catOpts"></datalist>' +
+              '</div>' +
+            '</div>' +
+            '<div class="acc fold">' +
+              '<button type="button" class="acc-hd"><span>� 口令与成员</span><span class="hd-arrow">▾</span></button>' +
+              '<div class="acc-bd">' +
+                '<div class="adm-row"><label>我的口令</label><button type="button" id="bChPwd">🔑 修改口令</button><button type="button" id="bBackup">⬇ 明文备份</button><button type="button" id="bLock">🚪 退出登录</button></div>' +
+                '<div class="adm-row"><label>成员</label><button type="button" id="mAdd">＋ 添加成员</button><button type="button" id="mDel">🗑 移除本成员</button><button type="button" id="mSwitch">⇄ 切换成员</button></div>' +
+                '<div class="acc-note">成员各用自己的口令，空间互相独立、不可互看。成员变更后请「下载 config.json」发布。</div>' +
+              '</div>' +
+            '</div>' +
             '<div class="adm-btns">' +
               '<button type="button" id="bAdd">＋ 新增入口</button>' +
-              '<button type="button" id="bSave">保存到本机</button>' +
+              '<button type="button" id="bSave">💾 保存到本机</button>' +
               '<button type="button" id="bCopy">📋 复制新配置</button>' +
-              '<button type="button" id="bExport">下载 config.json</button>' +
-              '<button type="button" id="bReset">重置本机缓存</button>' +
-              '<button type="button" id="bImport">导入配置</button>' +
+              '<button type="button" id="bExport">⬇ 下载 config.json</button>' +
+              '<button type="button" id="bImport">📥 导入配置</button>' +
+              '<button type="button" id="bReset">↺ 重置本机缓存</button>' +
               '<input type="file" id="fFile" accept=".json,application/json" style="display:none">' +
             '</div>' +
           '</div>' +
@@ -1241,6 +1389,21 @@
             '<div class="pw-btns">' +
               '<button type="button" class="pw-cancel" id="cpNo">取消</button>' +
               '<button type="button" class="pw-go" id="cpOk">保存新口令</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="pw-mask" id="nmMask">' +
+          '<div class="pw-card">' +
+            '<h3>＋ 添加成员</h3>' +
+            '<p>新成员有自己独立的空间与口令，彼此互不可见。添加后请「下载 config.json」发布，对方才能用。</p>' +
+            '<div class="cp-row"><label>名字</label><input type="text" id="nmName" maxlength="12" placeholder="如：女儿"></div>' +
+            '<div class="cp-row"><label>头像表情（emoji）</label><input type="text" id="nmEmoji" maxlength="4" placeholder="如：🐱"></div>' +
+            '<div class="cp-row"><label>初始口令（至少 6 位，转告对方）</label><input type="password" id="nmP1" autocomplete="new-password"></div>' +
+            '<div class="cp-row"><label>再输入一次</label><input type="password" id="nmP2" autocomplete="new-password"></div>' +
+            '<div class="pw-err" id="nmErr"></div>' +
+            '<div class="pw-btns">' +
+              '<button type="button" class="pw-cancel" id="nmNo">取消</button>' +
+              '<button type="button" class="pw-go" id="nmOk">添加成员</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -1392,12 +1555,18 @@
         cur.entries   = cur.entries.map(norm);
       }
       function isRemembered() { try { return !!localStorage.getItem(KS_MEM); } catch (e) { return false; } }
-      function saveNow() {   // 保存 = 加密后写入本机缓存（明文只存在于内存）
+      function whoAmI() {
+        if (!activeDoc || !activeDoc.users[uid]) return { name: "成员", emoji: "👤" };
+        return activeDoc.users[uid];
+      }
+      function saveNow() {   // 保存 = 加密当前成员内容，写回整份文档缓存
         collect();
-        if (!curKey) { toast("会话异常，请刷新页面重新输入口令"); return; }
-        reVaultWithCurrentKey(cfgOfCur()).then(function (vault) {
-          try { localStorage.setItem(V_KEY, JSON.stringify(vault)); } catch (e) { alert("浏览器拒绝写入缓存，可改用「下载 config.json」保存为文件。"); return; }
+        if (!curKey || !activeDoc || !activeDoc.users[uid]) { toast("会话异常，请刷新页面重新进入"); return; }
+        reVaultWithCurrentKey(cfgOfCur()).then(function (enc) {
           if (cfgSrc === "embedded") cfgSrc = "local";
+          activeDoc.siteName = cur.siteName;
+          activeDoc.users[uid].enc = enc;
+          docToLocal(activeDoc);
           needPublish = true;
           updateNote();
           toast(cfgSrc === "remote" || cfgSrc === "migrated"
@@ -1409,22 +1578,24 @@
       function updateNote() {
         var el = $id("cfgNote");
         if (!el) return;
+        var who = whoAmI();
+        var whoHtml = "（<b>" + (who.emoji || "") + " " + (who.name || "成员") + "</b> 的空间）";
         if (cfgSrc === "remote") {
           el.className = "adm-note src-remote";
           el.innerHTML = needPublish
-            ? "当前来自<b>线上 config.json</b>，但本机有<b>未发布的修改</b>。点「📋 复制新配置」或「下载 config.json」替换仓库文件并提交，访客才看得到最新内容。"
-            : "当前显示的是<b>线上 config.json</b>（已加密）。改好后点「📋 复制新配置」/「下载 config.json」替换仓库文件并提交即可发布。";
+            ? "当前来自<b>线上 config.json</b> " + whoHtml + "，但本机有<b>未发布的修改</b>。点「📋 复制新配置」或「下载 config.json」替换仓库文件并提交，访客才看得到最新内容。"
+            : "当前显示的是<b>线上 config.json</b> " + whoHtml + "（已加密）。改好后点「📋 复制新配置」/「下载 config.json」替换仓库文件并提交即可发布。";
         } else if (cfgSrc === "migrated") {
           el.className = "adm-note src-local";
-          el.innerHTML = "数据已从<b>旧版明文</b>加密迁移到本机。请务必用「下载 config.json」<b>替换仓库里的 config.json</b>并提交；替换前他人仍可直接读到明文旧文件。";
+          el.innerHTML = "数据已从<b>旧版明文</b>加密迁移到本机 " + whoHtml + "。请务必用「下载 config.json」<b>替换仓库里的 config.json</b>并提交；替换前他人仍可直接读到明文旧文件。";
         } else if (cfgSrc === "local") {
           el.className = "adm-note src-local";
           el.innerHTML = needPublish
-            ? "当前显示<b>本机加密缓存</b>（已修改未发布）。发布：点「下载 config.json」替换仓库文件并提交。"
-            : "当前显示<b>本机加密缓存</b>。发布给别人：点「下载 config.json」上传仓库替换并提交；访客需输入同一口令才能查看。";
+            ? "当前显示<b>本机加密缓存</b> " + whoHtml + "（已修改未发布）。发布：点「下载 config.json」替换仓库文件并提交。"
+            : "当前显示<b>本机加密缓存</b> " + whoHtml + "。发布给别人：点「下载 config.json」上传仓库替换并提交；其他成员与访客需各自口令才能查看。";
         } else {
           el.className = "adm-note src-embedded";
-          el.innerHTML = "当前是<b>内置示例</b>（加密兜底，口令 admin888，仅供首次/离线体验）。正式使用：改好数据 → 「下载 config.json」上传仓库替换 → 再点「修改口令」换成自己的。";
+          el.innerHTML = "当前是<b>内置示例</b> " + whoHtml + "（加密兜底，仅供首次/离线体验）。正式使用：改好数据 → 「下载 config.json」上传仓库替换 → 建议在后台「修改口令/添加成员」整理成员。";
         }
       }
 
@@ -1442,6 +1613,80 @@
         if (!confirm("退出登录并重新锁定本页？")) return;
         closeAdm(); clearKeys(); location.reload();
       });
+      /* ---- 成员管理：添加 / 移除 / 切换 ---- */
+      var nmMask = $id("nmMask");
+      function openNm() {
+        nmMask.style.display = "flex";
+        $id("nmErr").textContent = "";
+        ["nmName", "nmEmoji", "nmP1", "nmP2"].forEach(function (x) { $id(x).value = ""; });
+        setTimeout(function () { $id("nmName").focus(); }, 30);
+      }
+      function closeNm() { nmMask.style.display = "none"; }
+      function memberSkeleton() {
+        return { slogan: "", footer: "", categories: ["常用"], theme: "auto", engine: "bing",
+                 showClock: true, showQuote: true, showWeather: true, showTodo: true, entries: [] };
+      }
+      function doAddMember() {
+        var nm = $id("nmName").value.trim(), em = $id("nmEmoji").value.trim(),
+            p1 = $id("nmP1").value, p2 = $id("nmP2").value, err = $id("nmErr");
+        if (!nm) { err.textContent = "请填写名字"; return; }
+        if (p1.length < 6) { err.textContent = "口令至少 6 位"; return; }
+        if (p1 !== p2) { err.textContent = "两次口令不一致"; return; }
+        if (!activeDoc || !activeDoc.users[uid]) { err.textContent = "会话异常，请刷新重进"; return; }
+        var ok = $id("nmOk"); ok.disabled = true;
+        makeVault(memberSkeleton(), p1).then(function (enc) {
+          activeDoc.siteName = cur.siteName;
+          activeDoc.users.push({ name: nm, emoji: em || "👤", enc: enc });
+          if (cfgSrc === "embedded") cfgSrc = "local";
+          docToLocal(activeDoc);
+          needPublish = true;
+          closeNm(); ok.disabled = false;
+          fillWho();
+          updateNote();
+          toast("已添加成员「" + nm + "」并加密保存。请用「下载 config.json」发布，对方才可登录");
+        }).catch(function () { err.textContent = "加密失败，请重试"; ok.disabled = false; });
+      }
+      function doRemoveMember() {
+        if (!activeDoc || activeDoc.users.length <= 1) { toast("至少保留一位成员"); return; }
+        var who = whoAmI();
+        if (!confirm("将移除成员「" + (who.name || "") + "」并删除其全部数据（不可恢复）。\n移除结果需要发布后才会对其他人生效。确定继续？")) return;
+        var copy;
+        try { copy = JSON.parse(JSON.stringify(activeDoc)); } catch (e) { return; }
+        copy.users.splice(uid, 1);
+        if (!copy.users.length) { toast("至少要保留一位成员"); return; }
+        docToLocal(copy);
+        needPublish = true;
+        // 直接导出“移除后”的新版 config.json，方便立即发布
+        var blob = new Blob([JSON.stringify(copy, null, 2)], { type: "application/json;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "config.json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 200);
+        toast("已生成移除成员后的 config.json，请上传替换仓库并提交，之后刷新即生效");
+        clearKeys();
+        setTimeout(function () { location.reload(); }, 1500);
+      }
+      function fillWho() {
+        var who = whoAmI();
+        var txt = (who.emoji || "") + " " + (who.name || "成员");
+        var n = activeDoc && activeDoc.users ? activeDoc.users.length : 1;
+        var chip = $id("whoChip");
+        if (chip) chip.textContent = n + " 位成员 · " + txt;
+        var old = $id("mWho");
+        if (old) old.textContent = txt;
+      }
+      $id("mAdd").addEventListener("click", openNm);
+      $id("nmNo").addEventListener("click", closeNm);
+      $id("nmOk").addEventListener("click", doAddMember);
+      $id("nmName").addEventListener("keydown", function (ev) { if (ev.key === "Enter") $id("nmEmoji").focus(); });
+      $id("nmP2").addEventListener("keydown", function (ev) { if (ev.key === "Enter") doAddMember(); });
+      $id("mDel").addEventListener("click", doRemoveMember);
+      $id("mSwitch").addEventListener("click", function () {
+        if (!confirm("切换成员将退出当前登录回到锁屏选择？")) return;
+        closeAdm(); clearKeys(); location.reload();
+      });
+      nmMask.addEventListener("click", function (ev) { if (ev.target === nmMask) closeNm(); });
       fEntries.addEventListener("scroll", closePop);
       if (fSearchEl) fSearchEl.addEventListener("input", function () {
         searchKw = this.value;
@@ -1517,12 +1762,17 @@
           navigator.clipboard.writeText(t).then(ok, legacy);
         } else legacy();
       }
-      function vaultTextNow(cb) {   // 用当前内容+当前钥匙生成新的密文 config.json
+      function vaultTextNow(cb) {   // 用当前内容+当前钥匙重加密当前成员，输出整份 v3 文档文本
         collect();
-        if (!curKey) { toast("会话异常，请刷新重新输入口令"); return; }
-        reVaultWithCurrentKey(cfgOfCur()).then(function (vault) {
+        if (!curKey || !activeDoc || !activeDoc.users[uid]) { toast("会话异常，请刷新重新输入口令"); return; }
+        var copy;
+        try { copy = JSON.parse(JSON.stringify(activeDoc)); } catch (e) { copy = { v: 3, siteName: cur.siteName || "", users: [] }; }
+        copy.siteName = cur.siteName;
+        reVaultWithCurrentKey(cfgOfCur()).then(function (enc) {
+          copy.users[uid].enc = enc;
+          docToLocal(copy);
           needPublish = false; updateNote();
-          cb(JSON.stringify(vault, null, 2));
+          cb(JSON.stringify(copy, null, 2));
         });
       }
       $id("bCopy").addEventListener("click", function () {
@@ -1567,15 +1817,18 @@
         var a = $id("cpNew1").value, b = $id("cpNew2").value, err = $id("cpErr");
         if (a.length < 6) { err.textContent = "口令至少 6 位"; return; }
         if (a !== b) { err.textContent = "两次输入不一致"; return; }
+        if (!activeDoc || !activeDoc.users[uid]) { err.textContent = "会话异常，请刷新重进"; return; }
         var okBtn = $id("cpOk"); okBtn.disabled = true;
-        makeVault(cfgOfCur(), a).then(function (vault) {
-          activeSalt = b64ToU8(vault.enc.salt);
+        makeVault(cfgOfCur(), a).then(function (enc) {
+          activeSalt = b64ToU8(enc.salt);
           return deriveKey(a, activeSalt).then(function (k) {
             curKey = k;
-            return rawOf(k).then(function (r) { curRawB64 = r; rememberKey(isRemembered()); });
+            return rawOf(k).then(function (r) { curRawB64 = r; storeAuth(isRemembered(), uid, r); });
           }).then(function () {
-            try { localStorage.setItem(V_KEY, JSON.stringify(vault)); } catch (e) {}
             if (cfgSrc === "embedded") cfgSrc = "local";
+            activeDoc.siteName = cur.siteName;
+            activeDoc.users[uid].enc = enc;
+            docToLocal(activeDoc);
             needPublish = true;
             closeCp(); okBtn.disabled = false;
             updateNote();
@@ -1592,24 +1845,28 @@
         reader.onload = function () {
           try {
             var o = JSON.parse(reader.result);
-            if (o && typeof o === "object" && o.enc && o.v === 2) {
-              // 密文库：用当前钥匙解密导入
-              if (!curKey) { alert("当前没有可用的解密钥匙，请刷新后重新输入口令"); return; }
-              decryptBytes(o, curKey).then(function (obj) {
-                assignCur(obj);
-                activeSalt = b64ToU8(o.enc.salt);
+            var d = toDoc(o);
+            if (d) {
+              // 密文文档：优先用当前成员钥匙解当前位，若不符再试文件第一位成员
+              var idx = (d.users[uid]) ? uid : 0;
+              if (!curKey || !d.users[idx]) { alert("无法解密：当前没有可用钥匙或文件中没有成员"); return; }
+              decryptMemberKey(d.users[idx], curKey).then(function (obj) {
+                var nn = normalizeCfg(obj);
+                var site = (cur.siteName || d.siteName || "");
+                nn.siteName = site;
+                assignCur(nn);
                 cfgSrc = "local"; needPublish = true;
                 fillForm(); render(); updateNote();
-                toast("已导入加密配置");
+                toast("已导入加密内容到当前成员");
               }).catch(function () { alert("导入失败：口令不一致或文件已损坏"); });
               return;
             }
             var arr = Array.isArray(o) ? o : (o && Array.isArray(o.entries) ? o.entries : null);
             if (!arr) { alert("导入文件格式不对：应为加密 config.json，或含 entries 数组的明文配置"); return; }
             if (o && typeof o === "object" && !Array.isArray(o)) {
-              if (typeof o.siteName === "string") cur.siteName = o.siteName;
-              if (typeof o.slogan === "string")   cur.slogan   = o.slogan;
-              if (typeof o.footer === "string")   cur.footer   = o.footer;
+              if (typeof o.slogan === "string") cur.slogan = o.slogan;
+              if (typeof o.footer === "string") cur.footer = o.footer;
+              if (typeof o.siteName === "string") { cur.siteName = o.siteName; var s2 = $id("fSite"); if (s2) s2.value = o.siteName; }
             }
             cur.entries = arr.map(norm);
             cfgSrc = "local"; needPublish = true;
@@ -1626,6 +1883,7 @@
         admWrap.classList.add("on"); gear.classList.add("off");
         searchKw = ""; if (fSearchEl) fSearchEl.value = ""; // 重进后台时重置搜索
         fillForm();
+        fillWho();
         updateNote();
       }
       function closeAdm() { admWrap.classList.remove("on"); gear.classList.remove("off"); }
@@ -1633,10 +1891,30 @@
       gear.addEventListener("click", function () {
         if (admWrap.classList.contains("on")) closeAdm(); else openAdm();
       });
+      /* ---- 分区折叠 ---- */
+      function accSwitch(acc, open) {
+        if (open) {
+          acc.classList.remove("fold");
+          if (acc.querySelector("#fEntries")) acc.classList.add("acc-open");
+        } else {
+          acc.classList.remove("acc-open");
+          acc.classList.add("fold");
+        }
+      }
+      admWrap.addEventListener("click", function (ev) {
+        var hd = ev.target.closest ? ev.target.closest(".acc-hd") : null;
+        if (!hd) return;
+        var acc = hd.parentNode;
+        if (!acc || !acc.classList.contains("acc")) return;
+        accSwitch(acc, acc.classList.contains("fold"));
+        if (!acc.classList.contains("fold") && acc.querySelector("#fEntries")) {
+          setTimeout(function () { fSearchEl && fSearchEl.focus(); }, 50);
+        }
+      });
       cpMask.addEventListener("click", function (ev) { if (ev.target === cpMask) closeCp(); });
       $id("admX").addEventListener("click", closeAdm);
       document.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") { closePop(); closeAdm(); closeCp(); }
+        if (ev.key === "Escape") { closePop(); closeAdm(); closeCp(); closeNm(); }
       });
       initLock();   // 启动锁屏与解密流程（此时所有监听均已就绪）
     })();
