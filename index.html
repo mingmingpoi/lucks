@@ -8,33 +8,37 @@
 
 <!--
   ========================================================================
-   此主页的维护与发布方式（重要）：
+   ★★★ 这个文件怎么用 ★★★
+
+   【本地/个人预览】双击 index.html 即可，不用服务器。
+   【发布到 GitHub Pages】把 index.html 和 config.json 放同一目录一起上传。
+   【以后线上更新数据】不用再改这个 index.html！
+      两种方式任选：
+      ① 网页里点右下角 ⚙ → 输口令进后台 → 改完点「📋 复制新配置」或
+         「下载 config.json」→ 用得到的文件替换 GitHub 仓库里的
+         config.json 并提交 → 线上刷新即生效（本页会自动读取线上 config.json）。
+      ② 直接编辑仓库里的 config.json（字段见下）→ 提交即可。
+
+   页面数据优先级：线上 config.json(发布版) > 本机浏览器缓存 > 下面内嵌默认。
+   本文件下面 SITE_CONFIG 只是"离线兜底默认值"，正常线上展示以 config.json 为准。
+
+   字段说明（config.json 与下方 SITE_CONFIG 结构一致）：
    ----------------------------------------------------------
-   线上访客看到的数据来自同目录的 config.json 文件（仓库数据源）。
-   您(管理员)更新内容的流程：
-   1. 本机打开本文件夹的 index.html（双击即可），进右下角管理后台改内容；
-   2. 点「保存并同步」，会自动下载/生成一份最新的 config.json 到本机；
-   3. 把这份 config.json 放回本文件夹（覆盖旧的 config.json）；
-   4. 双击「同步.bat」→ 自动 git 提交并推送到 Gitee 仓库；
-   5. 若用 Gitee Pages，去仓库「服务-Gitee Pages」点一次"更新"触发审核。
-   ※ 线上页面自动读取 config.json；本文件顶部 entries 只是"出厂默认值"，
-     给首次打开或本地管理时兜底用，平时改它不影响线上。
-   ========================================================================
-   下方【内容配置区】仅供兜底与备份，一般用后台 + config.json 维护即可。
-   格式说明（兜底用，照抄一行改一改）：
-   ----------------------------------------------------------
-   ① 新增一个入口：在 entries 的 [ 和 ] 之间复制任意一行 { ... } 填好。
-   每行格式：
-        type     入口类型：填 'link'     → 点击跳转网页(新窗口打开)
-                          填 'download' → 点击下载文件
-        icon     卡片小图标：填一个 emoji，如 🌐 📄 🎮 🎁 ✨；可留 ''
-        title    卡片标题：显示的入口名称
-        desc     卡片副标题：一句话描述；可留 ''
-        url      链接地址：跳转网页填网址；下载文件填与网页同目录的文件名
-        color    卡片配色（可不填）：candy / sunset / ocean / grape /
-                 mint / gold 六选一；不填自动轮换
-        cat      分类（可不填）：填 categories 里的名字，多个用英文逗号分隔
-   ② 每两个入口之间用英文逗号 , 分隔；最后一个后面不要逗号。
+    siteName   顶部大标题
+    slogan     顶部副标题
+    footer     底部小字，不需要就留 ''
+    adminPass  管理后台口令
+    categories 首页分类标签数组，如 ["实用","学习"]
+    entries    入口数组，每一项：
+        type     入口类型：'link' → 跳转网页(新窗口)；'download' → 下载文件
+        icon     卡片图标：填一个 emoji，如 🌐 📄 📦
+        title    入口名称
+        desc     一句话描述，不需要可留 ''
+        url      网页填网址；下载文件填文件名(与网页同目录)，也支持任意下载链接
+        color    配色：candy / sunset / ocean / grape / mint / gold，可不填自动轮换
+        cat      分类：categories 里的名字，多个用逗号分隔，如 "实用,音乐"
+   ② 修改：改对应字段即可。
+   ③ 删除：删掉对应的一整项 { ... } 即可（注意逗号）。
   ========================================================================
 -->
 <style>
@@ -206,8 +210,13 @@
   .adm-head b{font-size:18px;}
   .adm-x{border:none; background:#f1eef8; color:#6a6286; width:32px; height:32px;
          border-radius:10px; cursor:pointer; font-size:14px;}
-  .adm-tip{color:#8a819f; font-size:12.5px; line-height:1.6; margin:0 0 14px;
+  .adm-tip{color:#8a819f; font-size:12.5px; line-height:1.6; margin:0 0 10px;
            background:#faf8ff; border:1px dashed #e3daf5; padding:8px 12px; border-radius:10px;}
+  .adm-note{border-radius:10px; padding:8px 11px; font-size:12.5px; line-height:1.6; margin:0 0 14px;}
+  .adm-note.src-remote{background:#eef9f0; color:#1f7a43; border:1px solid #cdeeda;}
+  .adm-note.src-local{background:#fff7e6; color:#9a6700; border:1px solid #f5e0b5;}
+  .adm-note.src-embedded{background:#f4f4f8; color:#6a6286; border:1px solid #e6e6ee;}
+  .adm-note b{font-weight:700;}
   .adm-sec{display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700;
            color:#6a4fd8; margin:18px 0 8px;}
   .adm-sec::after{content:""; flex:1; height:1px; background:#efeafc;}
@@ -292,7 +301,13 @@
   <div class="blob b2"></div>
   <div class="blob b3"></div>
 
-  <!-- ======================= 内容配置区：改这里即可 ======================= -->
+  <!-- ============== 离线兜底默认值（线上展示以 config.json 为准） ==============
+       说明：本对象只作为"页面自带默认值"。当与 index.html 同目录存在
+       config.json 时（GitHub Pages 上即是如此），页面会自动读取 config.json，
+       下面的内容不会影响线上显示。线上更新数据请改仓库里的 config.json，
+       或进网页后台改完点「复制新配置 / 下载 config.json」替换。本地想改默认值
+       也可以直接改这里。字段含义同 config.json（见文件顶部注释）。
+  ======================================================================== -->
   <script>
     const SITE_CONFIG = {
       siteName : "lucks",            // 顶部大标题
@@ -333,11 +348,6 @@
       /* ================== 数据：默认配置 + 本机缓存(缓存优先) ================== */
       var LS_KEY = "lucks_home_cfg_v1";
 
-      /* 管理模式判断：
-         file:// 双击打开 或 地址加 ?edit=1 → 编辑模式(显示齿轮后台，改本地数据)
-         其它(线上 / http 直开)         → 展示模式：优先读取同目录 config.json */
-      var EDIT_MODE = (location.protocol === "file:") || /[?&]edit=1(\b|&|$)/.test(location.search);
-
       function norm(e) {
         e = e || {};
         return {
@@ -357,7 +367,7 @@
         } catch (err) {}
         return null;
       }
-      var saved = EDIT_MODE ? readSaved() : null;
+      var saved = readSaved();
 
       function defaults() {
         var d = (typeof SITE_CONFIG !== "undefined") ? SITE_CONFIG : {};
@@ -383,50 +393,7 @@
         return o;
       }
       var cur = merged();
-      var remoteData = null;   // 线上模式读取到的 config.json 数据
-
-      /* 生成可下载/保存的 config.json 数据对象 */
-      function buildConfigData() {
-        return {
-          app: "lucks-home-config", savedAt: new Date().toISOString(),
-          siteName: cur.siteName, slogan: cur.slogan, footer: cur.footer,
-          adminPass: cur.adminPass, categories: cur.categories,
-          entries: cur.entries.map(norm)
-        };
-      }
-      /* 远程(线上)数据源：读取同目录 config.json */
-      function loadRemote() {
-        if (EDIT_MODE) return;                       // 本地管理模式不读远程
-        var gearEl = document.getElementById("gear");
-        if (gearEl) gearEl.classList.add("off");      // 展示模式下先隐藏齿轮
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "config.json?_=" + Date.now(), true);
-        xhr.timeout = 6000;
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState !== 4) return;
-          if (xhr.status === 200) {
-            try {
-              var o = JSON.parse(xhr.responseText);
-              if (o && typeof o === "object") {
-                remoteData = o;
-                cur = {
-                  siteName:   (typeof o.siteName  === "string") ? o.siteName  : cur.siteName,
-                  slogan:     (typeof o.slogan    === "string") ? o.slogan    : cur.slogan,
-                  footer:     (typeof o.footer    === "string") ? o.footer    : cur.footer,
-                  adminPass:  (typeof o.adminPass === "string" && o.adminPass !== "") ? o.adminPass : cur.adminPass,
-                  categories: Array.isArray(o.categories) ? o.categories.filter(function (c) { return typeof c === "string" && c.trim(); }) : cur.categories,
-                  entries:    Array.isArray(o.entries) ? o.entries.map(norm) : cur.entries
-                };
-                render();
-                return;
-              }
-            } catch (e) {}
-          }
-          // 读取失败 → 退化为可管理(齿轮显示)，便于兜底
-          if (gearEl) gearEl.classList.remove("off");
-        };
-        xhr.send(null);
-      }
+      var remoteActive = false;   // 是否已加载线上 config.json(发布版)
 
       /* ================== 访客收藏(本机浏览器，按链接记忆) ================== */
       var FAV_KEY = "lucks_home_fav_v1";
@@ -590,12 +557,38 @@
         if (curBtn && curBtn.scrollIntoView) curBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       });
 
+      /* ---- 远程 config.json：GitHub 上部署时读取"发布版"，成功后整体接管 ---- */
+      function applyCfg(o) {
+        if (typeof o.siteName === "string") cur.siteName = o.siteName;
+        if (typeof o.slogan === "string")   cur.slogan   = o.slogan;
+        if (typeof o.footer === "string")   cur.footer   = o.footer;
+        if (typeof o.adminPass === "string" && o.adminPass !== "") cur.adminPass = o.adminPass;
+        if (Array.isArray(o.categories)) cur.categories = o.categories.filter(function (c) { return typeof c === "string" && c.trim(); });
+        if (Array.isArray(o.entries))    cur.entries    = o.entries.map(norm);
+      }
+      function loadRemote() {
+        if (typeof fetch !== "function") return;
+        fetch("config.json", { cache: "no-store" })
+          .then(function (r) { if (!r.ok) throw new Error("nf"); return r.json(); })
+          .then(function (o) {
+            if (!o || typeof o !== "object" || Array.isArray(o) || !Array.isArray(o.entries)) throw new Error("bad");
+            if (admWrap.classList.contains("on")) return;   // 后台正在编辑时先不打断
+            applyCfg(o);
+            remoteActive = true;
+            render();
+            updateNote();
+          })
+          .catch(function () { /* 本地双击 / 未放置 config.json 时静默回退到内嵌或本机缓存 */ });
+      }
+      loadRemote();
+
       /* ================== 管理后台界面 ================== */
       document.body.insertAdjacentHTML("beforeend",
         '<div class="adm-wrap" id="admWrap">' +
           '<div class="adm">' +
             '<div class="adm-head"><b>管理后台</b><button type="button" class="adm-x" id="admX">✕</button></div>' +
-            '<p class="adm-tip">改动会即时预览。完成后请点「保存并同步」：它会写本机缓存并生成一份 <b>config.json</b> 供下载。请把这份 config.json 放回本文件夹替换旧文件，再双击「同步.bat」推送到 Gitee，线上即更新（若用 Gitee Pages 还需在其后台点一次“更新”）。</p>' +
+            '<p class="adm-tip">改动会即时刷新页面预览。下方提示会告诉你当前数据来自哪里、如何发布到线上。</p>' +
+            '<div class="adm-note" id="cfgNote"></div>' +
             '<div class="adm-sec">站点设置</div>' +
             '<div class="adm-row"><label>大标题</label><input id="fSite"></div>' +
             '<div class="adm-row"><label>副标题</label><input id="fSlog"></div>' +
@@ -609,8 +602,9 @@
             '<div class="adm-btns">' +
               '<button type="button" id="bAdd">＋ 新增入口</button>' +
               '<button type="button" id="bSave">保存到本机</button>' +
+              '<button type="button" id="bCopy">📋 复制新配置</button>' +
+              '<button type="button" id="bExport">下载 config.json</button>' +
               '<button type="button" id="bReset">恢复默认</button>' +
-              '<button type="button" id="bExport">导出配置</button>' +
               '<button type="button" id="bImport">导入配置</button>' +
               '<input type="file" id="fFile" accept=".json,application/json" style="display:none">' +
             '</div>' +
@@ -777,15 +771,6 @@
         if ($id("fPass").value !== "") cur.adminPass = $id("fPass").value;
         cur.entries   = cur.entries.map(norm);
       }
-      /* 触发浏览器下载 config.json */
-      function downloadFile(name, content, mime) {
-        var blob = new Blob([content], { type: mime || "application/octet-stream" });
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = name;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 200);
-      }
       function saveNow() {
         collect();
         saved = {
@@ -795,13 +780,34 @@
         };
         try {
           localStorage.setItem(LS_KEY, JSON.stringify(saved));
+          toast(remoteActive
+            ? "已保存到本机备份。发布给别人请看后台顶部绿色提示，用「复制新配置」替换 GitHub 上的 config.json"
+            : "已保存到本机浏览器缓存");
         } catch (e) {
-          alert("浏览器拒绝写入缓存：" + e.message + "\n不影响生成 config.json，请继续。");
+          alert("浏览器拒绝写入缓存：" + e.message + "\n可改用「下载 config.json」保存为文件再上传。");
         }
-        // 生成 config.json 供下载，覆盖本文件夹里的旧文件后运行 同步.bat 即可上线
-        downloadFile("config.json", JSON.stringify(buildConfigData(), null, 2),
-                     "application/json;charset=utf-8");
-        toast("已生成 config.json（保存在浏览器下载目录）。请放到本文件夹覆盖旧的，再双击 同步.bat 推送上线");
+      }
+      function configJSON() {   // 生成与 config.json 完全同格式的内容(可直接上传替换)
+        collect();
+        return {
+          siteName:  cur.siteName, slogan: cur.slogan, footer: cur.footer,
+          adminPass: cur.adminPass, categories: cur.categories,
+          entries:   cur.entries.map(norm)
+        };
+      }
+      function updateNote() {
+        var el = $id("cfgNote");
+        if (!el) return;
+        if (remoteActive) {
+          el.className = "adm-note src-remote";
+          el.innerHTML = "当前显示的是<b>线上 config.json</b>（发布版）。改好下面内容后，点「📋 复制新配置」或「下载 config.json」，再到 GitHub 仓库<b>替换 config.json 并提交</b>，线上刷新即生效。";
+        } else if (saved) {
+          el.className = "adm-note src-local";
+          el.innerHTML = "当前显示的是<b>本机缓存</b>（本机曾点过“保存到本机”）。想发布给别人看：改好后点「📋 复制新配置」/「下载 config.json」替换仓库文件并提交；或点「恢复默认」后刷新回到默认/线上内容。";
+        } else {
+          el.className = "adm-note src-embedded";
+          el.innerHTML = "当前显示的是页面内嵌的<b>默认配置</b>。把它和 index.html 一起放到 GitHub 后，会自动读取同目录的 <b>config.json</b>（线上优先）。";
+        }
       }
 
       $id("fSite").addEventListener("input", function () { cur.siteName = this.value; render(); });
@@ -876,11 +882,33 @@
         fillForm(); render();
         toast("已恢复默认并清空本机缓存");
       });
+      function copyText(t) {
+        function ok() { toast("新配置已复制，去 GitHub 替换 config.json 提交即可发布"); }
+        function legacy() {
+          var ta = document.createElement("textarea");
+          ta.value = t;
+          ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand("copy"); ok(); }
+          catch (e) { toast("复制失败，请改用「下载 config.json」"); }
+          document.body.removeChild(ta);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(t).then(ok, legacy);
+        } else legacy();
+      }
+      $id("bCopy").addEventListener("click", function () {
+        copyText(JSON.stringify(configJSON(), null, 2));
+      });
       $id("bExport").addEventListener("click", function () {
-        collect();
-        downloadFile("主页配置.json", JSON.stringify(buildConfigData(), null, 2),
-                     "application/json;charset=utf-8");
-        toast("已导出配置文件(主页配置.json)");
+        var data = configJSON();
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "config.json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 200);
+        toast("已下载 config.json，上传替换 GitHub 仓库里的同名文件即可");
       });
       $id("bImport").addEventListener("click", function () { $id("fFile").click(); });
       $id("fFile").addEventListener("change", function () {
@@ -920,6 +948,7 @@
         admWrap.classList.add("on"); gear.classList.add("off");
         searchKw = ""; if (fSearchEl) fSearchEl.value = ""; // 重进后台时重置搜索
         fillForm();
+        updateNote();
       }
       function closeAdm() { admWrap.classList.remove("on"); gear.classList.remove("off"); }
 
@@ -939,9 +968,6 @@
       document.addEventListener("keydown", function (ev) {
         if (ev.key === "Escape") { closePop(); closePw(); closeAdm(); }
       });
-
-      /* 展示模式：读取同目录 config.json 作为线上数据源 */
-      loadRemote();
     })();
   </script>
 </body>
