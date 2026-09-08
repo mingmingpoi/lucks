@@ -1,18 +1,9 @@
 {
+  "v": 2,
   "siteName": "lucks",
-  "slogan": "收集我常用的网站和文件，点卡片直达",
-  "footer": "",
-  "adminPass": "admin888",
-  "categories": ["实用", "学习", "工具", "艺术", "生活", "娱乐", "视频", "音乐", "图片", "游戏"],
-  "theme": "auto",
-  "engine": "bing",
-  "showClock": true,
-  "showQuote": true,
-  "showWeather": true,
-  "showTodo": true,
-  "entries": [
-    { "type": "link", "icon": "🌐", "title": "示例网站", "desc": "跳转网页示例：点开新窗口", "url": "https://www.example.com", "color": "", "cat": "工具,实用" },
-    { "type": "download", "icon": "📄", "title": "示例文件", "desc": "下载文件示例：文件与网页放同一目录", "url": "示例文件.pdf", "color": "mint", "cat": "学习" },
-    { "type": "link", "icon": "🎨", "title": "配色自定义", "desc": "color 可从 candy/sunset/ocean/grape/mint/gold 中选", "url": "https://www.example.com", "color": "candy", "cat": "艺术,图片" }
-  ]
+  "enc": {
+    "salt": "emD2E4zq/0JnXPIKGh3vGA==",
+    "iv": "/5pEdpp+72EvpX5m",
+    "data": "8JDP3NDE7Tu+DWj5SAm/sI0PAknsUrVbZ9sJU3yQ/5qDitBJP2F1+sZKiMkHsh0odSXQamuFtrqKuMGCYlte7GFadQK3xeau5Z0ZplGq4Z2dj6XFfVO1U4SFzTVDa/PJIDsMiXnetDneIRsH5AkL3zg+JhnbxYPj75HSC8pc0Nz0YMoCWuQK6raR1uxU40fe+oconOE7YVTLlZ0TkLpHMBJ6IBEceOPNa/PCZ6t1UoVlad5w4o9dUSaW+EOoMQc3ktwULxlkWtA4U72jf9HcZSJlcyLQV/CRPvjKZrdM4k1K1FA0rUrVJkr+oywy6K1XnWlaje/UThl2j7qpcZfw0FMzh+fGH25sf2k29Qk3IPrA0DMD8gDrB7M/oFRFTllKgZ4xy/cBFtjIKmGzhT8iq1I+CrwNUf8WhIbQ3pTMdeVUEbmsf/TRNxNCPiuo9hJymYOb6WLyZBx4UaUTSkQmUbEruYgBFzMJWNeQF014bVn4yDzGAdX+NeZBzLctNC38I+tGJ6K1DpPN+H9UmIYez0/GOH8eaopmxB/BFiLNKLxMod4n1qvSQ+s2Ltf7xGJSWIw8kWzmBs3msJrjnp8nsgFYQs4+vYnbC6T3sUF7gNJUqAx0hRZ82beBMODAJ2/olqkUdw7G7TwtxNC0PjvnSdYVzb477ms45Z0e/YiD7YBMYq7gR6MBjSoWz4BKpLwlhgw9C9te6k6XzJQomGMdT0TAemrkGGj6Ym8ncuNSeBK9x5YJDTrTM43oM4Ffa/O6aFDREaqE/YkGhWit8fjIkV0VNvevn4y2umcvd52Y0wyeyJNrOQuEPNnH/8ro4h12weUuMw3y4df0kh61H9DBGtE0AHDSd+EBAyKY779ISsuq83t8EZv1jT82nBTL5ZDxHrqGQ9n50TQ6hCoZlbwOPCWEufNqjp91P2yLoylUBFeZe+ozjPpr0bhlMxopTI6TLuQMGNKsFkkH4aOS53qP1Y86ggyUrnQke8Wg"
+  }
 }
